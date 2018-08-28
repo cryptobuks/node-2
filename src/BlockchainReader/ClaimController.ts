@@ -1,4 +1,5 @@
-import { InsightClient, PoetTimestamp } from '@po.et/poet-js'
+import { PoetTimestamp } from '@po.et/poet-js'
+import BitcoinCore from 'bitcoin-core'
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import * as Pino from 'pino'
@@ -15,20 +16,20 @@ export class ClaimController {
   private readonly db: Db
   private readonly collection: Collection
   private readonly messaging: Messaging
-  private readonly insightHelper: InsightClient
+  private readonly bitcoinCore: BitcoinCore
   private readonly configuration: ClaimControllerConfiguration
 
   constructor(
     @inject('Logger') logger: Pino.Logger,
     @inject('DB') db: Db,
     @inject('Messaging') messaging: Messaging,
-    @inject('InsightHelper') insightHelper: InsightClient,
+    @inject('BitcoinCore') bitcoinCore: BitcoinCore,
     @inject('ClaimControllerConfiguration') configuration: ClaimControllerConfiguration
   ) {
     this.logger = childWithFileName(logger, __filename)
     this.db = db
     this.messaging = messaging
-    this.insightHelper = insightHelper
+    this.bitcoinCore = bitcoinCore
     this.configuration = configuration
     this.collection = this.db.collection('blockchainReader')
   }
@@ -38,7 +39,7 @@ export class ClaimController {
 
     logger.trace({ blockHeight }, 'Retrieving Block Hash...')
 
-    const blockHash = await this.insightHelper.getBlockHash(blockHeight)
+    const blockHash = await this.bitcoinCore.getBlockHash(blockHeight)
 
     logger.trace(
       {
@@ -48,7 +49,7 @@ export class ClaimController {
       'Block Hash retrieved successfully. Retrieving Raw Block...'
     )
 
-    const block = await this.insightHelper.getBlock(blockHash)
+    const block = await this.bitcoinCore.getBlock(blockHash)
     const poetTimestamps: ReadonlyArray<PoetTimestamp> = block.transactions
       .map(getPoetTimestamp)
       .filter(_ => _)
