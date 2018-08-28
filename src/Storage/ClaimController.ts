@@ -253,7 +253,7 @@ export class ClaimController {
       claim,
       ...rest,
     }
-  } 
+  }
 
   private setDownloadSuccessTime = async ({
     entry,
