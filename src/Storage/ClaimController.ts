@@ -276,7 +276,7 @@ export class ClaimController {
     logger.trace('finished setting download success time')
 
     return {
-      entry: { ...entry, downloadSuccessTime },
+      entry,
       ...rest,
     }
   }
