@@ -270,9 +270,7 @@ export class ClaimController {
       {
         _id: entry._id,
       },
-      {
-        downloadSuccessTime,
-      }
+      { $set: { downloadSuccessTime } }
     )
 
     logger.trace('finished setting download success time')
