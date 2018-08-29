@@ -235,12 +235,7 @@ export class ClaimController {
     }
   }
 
-  private setDownloadSuccessTime = async ({
-    entry,
-    ...rest
-  }: {
-    entry: Entry
-  }) => {
+  private setDownloadSuccessTime = async ({ entry, ...rest }: { entry: Entry }) => {
     const logger = this.logger.child({ method: 'setDownloadSuccessTime' })
     logger.trace('setting download success time')
 
