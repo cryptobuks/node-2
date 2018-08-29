@@ -7,13 +7,15 @@ declare module 'bitcoin-core' {
     password?: string
   }
 
-  export default class BitcoinCore {
+  class BitcoinCore {
     constructor(configuration: Configuration)
     listUnspent(): any
     generate(count: number): any
     getBlockchainInfo(): any
     getBalance(): any
     getBlock(hash: string): any
-    getBlockHash(height: number): any
+    getBlockHash(height: number): string
   }
+
+  export = BitcoinCore
 }

@@ -1,5 +1,4 @@
-import { InsightClient } from '@po.et/poet-js'
-import BitcoinCore from 'bitcoin-core'
+import BitcoinCore = require('bitcoin-core')
 import { injectable, Container } from 'inversify'
 import { MongoClient, Db } from 'mongodb'
 import * as Pino from 'pino'

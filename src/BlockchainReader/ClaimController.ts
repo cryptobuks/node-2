@@ -1,10 +1,12 @@
 import { PoetTimestamp } from '@po.et/poet-js'
-import BitcoinCore from 'bitcoin-core'
+import BitcoinCore = require('bitcoin-core')
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import * as Pino from 'pino'
 
-import { getPoetTimestamp } from 'Helpers/Bitcoin'
+import { Block } from 'Interfaces'
+
+import { blockToPoetAnchors } from 'Helpers/Bitcoin'
 import { childWithFileName } from 'Helpers/Logging'
 import { Messaging } from 'Messaging/Messaging'
 
@@ -37,7 +39,7 @@ export class ClaimController {
   async scanBlock(blockHeight: number): Promise<void> {
     const logger = this.logger.child({ method: 'scanBlock' })
 
-    logger.trace({ blockHeight }, 'Retrieving Block Hash...')
+    logger.debug({ blockHeight }, 'Retrieving Block Hash')
 
     const blockHash = await this.bitcoinCore.getBlockHash(blockHeight)
 
@@ -46,25 +48,17 @@ export class ClaimController {
         blockHeight,
         blockHash,
       },
-      'Block Hash retrieved successfully. Retrieving Raw Block...'
+      'Block Hash retrieved successfully. Retrieving Raw Block'
     )
 
-    const block = await this.bitcoinCore.getBlock(blockHash)
-    const poetTimestamps: ReadonlyArray<PoetTimestamp> = block.transactions
-      .map(getPoetTimestamp)
-      .filter(_ => _)
-      .map(_ => ({
-        ..._,
-        blockHeight,
-        blockHash,
-      }))
-    const transactionIds = block.transactions.map(_ => _.id)
+    const block: Block = await this.bitcoinCore.getBlock(blockHash)
+    const poetAnchors = blockToPoetAnchors(block)
 
-    const matchingPoetTimestamps = poetTimestamps
+    const matchingPoetTimestamps = poetAnchors
       .filter(this.poetTimestampNetworkMatches)
       .filter(this.poetTimestampVersionMatches)
 
-    const unmatchingPoetTimestamps = poetTimestamps.filter(_ => !matchingPoetTimestamps.includes(_))
+    const unmatchingPoetTimestamps = poetAnchors.filter(_ => !matchingPoetTimestamps.includes(_))
 
     logger.trace(
       {
@@ -73,7 +67,7 @@ export class ClaimController {
         matchingPoetTimestamps,
         unmatchingPoetTimestamps,
       },
-      'Raw Block retrieved and scanned successfully'
+      'Block retrieved and scanned successfully'
     )
 
     await this.collection.updateOne(
@@ -81,7 +75,6 @@ export class ClaimController {
       {
         $set: {
           blockHash,
-          transactionIds,
           matchingPoetTimestamps,
           unmatchingPoetTimestamps,
         },
@@ -92,10 +85,7 @@ export class ClaimController {
     if (matchingPoetTimestamps.length) await this.messaging.publishPoetTimestampsDownloaded(matchingPoetTimestamps)
   }
 
-  /**
-   * @returns {Promise<number>} The highest block height from the database, or null if no block has been processed.
-   */
-  async findHighestBlockHeight(): Promise<number> {
+  async findHighestBlockHeight(): Promise<number | null> {
     const logger = this.logger.child({ method: 'findHighestBlockHeight' })
 
     const queryResults = await this.collection

@@ -1,30 +1,57 @@
-import { TransactionPoetTimestamp } from '@po.et/poet-js'
-import * as bitcore from 'bitcore-lib'
+import { PoetTimestamp, TransactionPoetTimestamp } from '@po.et/poet-js'
 
-export const PREFIX_POET = Buffer.from('POET')
-export const PREFIX_BARD = Buffer.from('BARD')
+import { Block, Transaction, VOut } from 'Interfaces'
 
-export function getPoetTimestamp(tx: bitcore.Transaction): TransactionPoetTimestamp {
-  const poetOutput = tx.outputs.filter(isOutputDataOut).find(isOutputCorrectNetwork)
+export const PREFIX_POET = 'POET'
+export const PREFIX_BARD = 'BARD'
 
-  const poetTimestampBuffer: Buffer = poetOutput && poetOutput.script.getData()
-
-  return (
-    poetTimestampBuffer && {
-      transactionId: tx.id,
-      outputIndex: tx.outputs.indexOf(poetOutput),
-      prefix: poetTimestampBuffer.slice(0, 4).toString(),
-      version: Array.from(poetTimestampBuffer.slice(4, 8)),
-      ipfsDirectoryHash: poetTimestampBuffer.slice(8).toString(),
-    }
-  )
+interface VOutWithTxId extends VOut {
+  readonly transactionId: string
 }
 
-function isOutputDataOut(output: bitcore.Output) {
-  return output.script.classify() === bitcore.Script.types.DATA_OUT
+export function blockToPoetAnchors(block: Block): ReadonlyArray<PoetTimestamp> {
+  return block.tx
+    .map(transactionToPoetAnchor)
+    .filter(_ => _)
+    .filter(poetAnchorHasCorrectPrefix)
+    .map(poetAnchorWithBlockData(block))
 }
 
-function isOutputCorrectNetwork(output: bitcore.Output) {
-  const data: Buffer = output.script.getData()
-  return data.indexOf(PREFIX_POET) === 0 || data.indexOf(PREFIX_BARD) === 0
+function transactionToPoetAnchor(transaction: Transaction): TransactionPoetTimestamp | undefined {
+  const outputs = transactionToOutputs(transaction)
+  const dataOutput = outputs.find(outputIsDataOutput)
+  return dataOutput && dataOutputToPoetAnchor(dataOutput)
 }
+
+const transactionToOutputs = (transaction: Transaction): ReadonlyArray<VOutWithTxId> =>
+  transaction.vout.map(vout => ({
+    ...vout,
+    transactionId: transaction.txid,
+  }))
+
+const outputIsDataOutput = (output: VOut) => output.scriptPubKey.type === 'nulldata'
+
+const dataOutputToPoetAnchor = (dataOutput: VOutWithTxId): TransactionPoetTimestamp => {
+  const { asm } = dataOutput.scriptPubKey
+  const data = asm.split(' ')[1]
+  const buffer = Buffer.from(data, 'hex')
+  const prefix = buffer.slice(0, 4).toString()
+  const version = Array.from(buffer.slice(4, 8))
+  const ipfsDirectoryHash = buffer.slice(8).toString()
+  return {
+    transactionId: dataOutput.transactionId,
+    outputIndex: null,
+    prefix,
+    version,
+    ipfsDirectoryHash,
+  }
+}
+
+const poetAnchorHasCorrectPrefix = (poetAnchor: TransactionPoetTimestamp) =>
+  [PREFIX_BARD, PREFIX_POET].includes(poetAnchor.prefix)
+
+const poetAnchorWithBlockData = (block: Block) => (poetAnchor: TransactionPoetTimestamp): PoetTimestamp => ({
+  ...poetAnchor,
+  blockHeight: block.height,
+  blockHash: block.hash,
+})
