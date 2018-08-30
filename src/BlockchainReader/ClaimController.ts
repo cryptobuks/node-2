@@ -6,7 +6,7 @@ import * as Pino from 'pino'
 
 import { Block } from 'Interfaces'
 
-import { blockToPoetAnchors } from 'Helpers/Bitcoin'
+import { blockToPoetAnchors, GetBlockVerbosity } from 'Helpers/Bitcoin'
 import { childWithFileName } from 'Helpers/Logging'
 import { Messaging } from 'Messaging/Messaging'
 
@@ -51,7 +51,8 @@ export class ClaimController {
       'Block Hash retrieved successfully. Retrieving Raw Block'
     )
 
-    const block: Block = await this.bitcoinCore.getBlock(blockHash)
+    const block: Block = await this.bitcoinCore.getBlock(blockHash, GetBlockVerbosity.Transactions)
+
     const poetAnchors = blockToPoetAnchors(block)
 
     const matchingPoetTimestamps = poetAnchors
