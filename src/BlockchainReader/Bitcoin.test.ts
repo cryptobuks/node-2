@@ -53,7 +53,6 @@ describe('Bitcoin.blockToPoetAnchors', async (should: any) => {
       expected: poetAnchors.length,
     })
   }
-
 })
 
 // Would be way better to validate the block's hash
