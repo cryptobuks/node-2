@@ -25,6 +25,16 @@ describe('Bitcoin.blockToPoetAnchors', async should => {
     const anchorIsVersion0003 = (poetAnchor: PoetTimestamp) => equals(poetAnchor.version, [0, 0, 0, 3])
     const anchorIsBlockHash = (poetAnchor: PoetTimestamp) => poetAnchor.blockHash === TestBlock.hash
     const anchorIsBlockHeight = (poetAnchor: PoetTimestamp) => poetAnchor.blockHeight === TestBlock.height
+    const anchorHasUnexpectedIpfsHash = (poetAnchor: PoetTimestamp) =>
+      !ipfsDirectoryHashes.includes(poetAnchor.ipfsDirectoryHash)
+
+    const ipfsDirectoryHashes = [
+      'QmSGQKnfG98KrpxNpZMhNyAKkvxudGqKhGeGv13zSXLQwz',
+      'QmSicKkyyb5NJqSJ9EaaMJWQvqa4e3CX7psjjnRxvgfodv',
+      'QmTrtzm1fvysZgsGhJicTrdJ1vSbi3UuLWBiHAMYBkcQfL',
+      'QmaXCvSA4noYsJruubE8cYUtu3gPAmgL9aosFzDdrsviWJ',
+      'QmYMHmt9H37gqwDMd4yYrt99cDRJxHpwVATKWYGbYNWncp',
+    ]
 
     assert({
       given: 'blockToPoetAnchors(TestBlock)',
@@ -59,6 +69,13 @@ describe('Bitcoin.blockToPoetAnchors', async should => {
       should: 'all returned elements should have the blockHeight set correctly',
       actual: poetAnchors.filter(anchorIsBlockHeight).length,
       expected: poetAnchors.length,
+    })
+
+    assert({
+      given: 'blockToPoetAnchors(TestBlock)',
+      should: 'all returned elements should have an expected IPFS Directory Hash',
+      actual: poetAnchors.find(anchorHasUnexpectedIpfsHash),
+      expected: undefined,
     })
   }
 })
