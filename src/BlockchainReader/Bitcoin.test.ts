@@ -2,7 +2,7 @@ import { PoetTimestamp } from '@po.et/poet-js'
 import { allPass, equals } from 'ramda'
 import { describe } from 'riteway'
 
-import { PREFIX_POET, PREFIX_BARD } from 'Helpers/Bitcoin'
+import { PREFIX_BARD } from 'Helpers/Bitcoin'
 
 import { blockToPoetAnchors } from './Bitcoin'
 
