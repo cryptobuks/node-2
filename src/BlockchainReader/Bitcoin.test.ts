@@ -24,6 +24,7 @@ describe('Bitcoin.blockToPoetAnchors', async should => {
     const isBardAnchor = (poetAnchor: PoetTimestamp) => poetAnchor.prefix === PREFIX_BARD
     const anchorIsVersion0003 = (poetAnchor: PoetTimestamp) => equals(poetAnchor.version, [0, 0, 0, 3])
     const anchorIsBlockHash = (poetAnchor: PoetTimestamp) => poetAnchor.blockHash === TestBlock.hash
+    const anchorIsBlockHeight = (poetAnchor: PoetTimestamp) => poetAnchor.blockHeight === TestBlock.height
 
     assert({
       given: 'blockToPoetAnchors(TestBlock)',
@@ -50,6 +51,13 @@ describe('Bitcoin.blockToPoetAnchors', async should => {
       given: 'blockToPoetAnchors(TestBlock)',
       should: 'all returned elements should have the blockHash set correctly',
       actual: poetAnchors.filter(anchorIsBlockHash).length,
+      expected: poetAnchors.length,
+    })
+
+    assert({
+      given: 'blockToPoetAnchors(TestBlock)',
+      should: 'all returned elements should have the blockHeight set correctly',
+      actual: poetAnchors.filter(anchorIsBlockHeight).length,
       expected: poetAnchors.length,
     })
   }
