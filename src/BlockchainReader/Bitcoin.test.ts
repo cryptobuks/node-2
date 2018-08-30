@@ -12,7 +12,7 @@ describe('Bitcoin.blockToPoetAnchors', async should => {
   const { assert } = should()
 
   assert({
-    given: 'testnet block 00000000000151360aad32397ff1cf7dd303bed163b0ef425e71a53ccdec7312',
+    given: 'testnet block 1356137',
     should: 'satisfy basic integrity checks',
     actual: validateTestBlockIntegrity(TestBlock),
     expected: true,
