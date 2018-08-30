@@ -9,13 +9,12 @@ interface VOutWithTxId extends VOut {
   readonly transactionId: string
 }
 
-export function blockToPoetAnchors(block: Block): ReadonlyArray<PoetTimestamp> {
-  return block.tx
+export const blockToPoetAnchors = (block: Block): ReadonlyArray<PoetTimestamp> =>
+  block.tx
     .map(transactionToPoetAnchor)
     .filter(_ => _)
     .filter(poetAnchorHasCorrectPrefix)
     .map(poetAnchorWithBlockData(block))
-}
 
 function transactionToPoetAnchor(transaction: Transaction): TransactionPoetTimestamp | undefined {
   const outputs = transactionToOutputs(transaction)
@@ -55,3 +54,9 @@ const poetAnchorWithBlockData = (block: Block) => (poetAnchor: TransactionPoetTi
   blockHeight: block.height,
   blockHash: block.hash,
 })
+
+export enum GetBlockVerbosity {
+  Hex = 0,
+  Parsed = 1,
+  Transactions = 2,
+}
