@@ -105,9 +105,11 @@ No Docker image is provided for InsightAPI since Bitpay offers a usable InsightA
 In a production environment, you may want to run these applications natively installed on the OS rather than dockerized. If you choose to run IPFS dockerized, make sure it's able to communicate with other IPFS nodes outside your network.
 
 ### Configuration
-The Po.et Node comes with a default configuration that works out of the box.
+The Po.et Node comes with a default configuration that mostly works out of the box.
 
 By default, timestamping to the blockchain is disabled, and RabbitMQ, IPFS and MongoDB are expected to be running in localhost with their default ports.
+
+Bitcoin Core RPC details will need to be provided. In the future we'll provide publicly accessible Bitcoin Core instance running on testnet and set the default configuration to point to it. 
 
 You can change any configuration by placing a json file in `~/.po.et/configuration.json`. Po.et will look for this file upon startup and, if found, merge its contents with the default configuration.
 
@@ -121,6 +123,11 @@ This is what the default configuration looks like:
   mongodbUrl: 'mongodb://localhost:27017/poet',
   ipfsUrl: 'http://localhost:5001',
   insightUrl: 'https://test-insight.bitpay.com/api',
+  bitcoinUrl: '',
+  bitcoinPort: 18443,
+  bitcoinNetwork: 'regtest',
+  bitcoinUsername: 'foo',
+  bitcoinPassword: 'bar',
 
   apiPort: 18080,
   poetNetwork: 'BARD',
