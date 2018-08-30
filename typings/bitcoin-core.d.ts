@@ -13,7 +13,7 @@ declare module 'bitcoin-core' {
     generate(count: number): any
     getBlockchainInfo(): any
     getBalance(): any
-    getBlock(hash: string): any
+    getBlock(hash: string, verbosity?: number): any
     getBlockHash(height: number): string
   }
 
