@@ -18,6 +18,14 @@ describe('Bitcoin.blockToPoetAnchors', async should => {
     expected: true,
   })
 
+  const ipfsDirectoryHashes = [
+    'QmSGQKnfG98KrpxNpZMhNyAKkvxudGqKhGeGv13zSXLQwz',
+    'QmSicKkyyb5NJqSJ9EaaMJWQvqa4e3CX7psjjnRxvgfodv',
+    'QmTrtzm1fvysZgsGhJicTrdJ1vSbi3UuLWBiHAMYBkcQfL',
+    'QmaXCvSA4noYsJruubE8cYUtu3gPAmgL9aosFzDdrsviWJ',
+    'QmYMHmt9H37gqwDMd4yYrt99cDRJxHpwVATKWYGbYNWncp',
+  ]
+
   {
     const poetAnchors = blockToPoetAnchors(TestBlock as any) // as any: see footer note
 
@@ -28,13 +36,7 @@ describe('Bitcoin.blockToPoetAnchors', async should => {
     const anchorHasUnexpectedIpfsHash = (poetAnchor: PoetTimestamp) =>
       !ipfsDirectoryHashes.includes(poetAnchor.ipfsDirectoryHash)
 
-    const ipfsDirectoryHashes = [
-      'QmSGQKnfG98KrpxNpZMhNyAKkvxudGqKhGeGv13zSXLQwz',
-      'QmSicKkyyb5NJqSJ9EaaMJWQvqa4e3CX7psjjnRxvgfodv',
-      'QmTrtzm1fvysZgsGhJicTrdJ1vSbi3UuLWBiHAMYBkcQfL',
-      'QmaXCvSA4noYsJruubE8cYUtu3gPAmgL9aosFzDdrsviWJ',
-      'QmYMHmt9H37gqwDMd4yYrt99cDRJxHpwVATKWYGbYNWncp',
-    ]
+    const anchorsIpfsHashes = poetAnchors.map(poetAnchor => poetAnchor.ipfsDirectoryHash)
 
     assert({
       given: 'blockToPoetAnchors(TestBlock)',
@@ -77,6 +79,13 @@ describe('Bitcoin.blockToPoetAnchors', async should => {
       actual: poetAnchors.find(anchorHasUnexpectedIpfsHash),
       expected: undefined,
     })
+
+    assert({
+      given: 'blockToPoetAnchors(TestBlock)',
+      should: 'all expected IPFS Directory hashes should be in the returned anchors',
+      actual: equals(anchorsIpfsHashes.sort(localeCompare), ipfsDirectoryHashes.sort(localeCompare)),
+      expected: true,
+    })
   }
 })
 
@@ -86,6 +95,8 @@ const validateTestBlockIntegrity = allPass([
   (block: any) => Array.isArray(block.tx),
   (block: any) => block.tx.length === 3517,
 ])
+
+const localeCompare = (a: string, b: string) => a.localeCompare(b)
 
 /*
  TestBlock as any:
