@@ -1,6 +1,7 @@
 import { PoetTimestamp, TransactionPoetTimestamp } from '@po.et/poet-js'
 
 import { PREFIX_BARD, PREFIX_POET, Block, Transaction, VOut } from 'Helpers/Bitcoin'
+import { isTruthy } from 'Helpers/isTruthy'
 
 interface VOutWithTxId extends VOut {
   readonly transactionId: string
@@ -9,7 +10,7 @@ interface VOutWithTxId extends VOut {
 export const blockToPoetAnchors = (block: Block): ReadonlyArray<PoetTimestamp> =>
   block.tx
     .map(transactionToPoetAnchor)
-    .filter(_ => _)
+    .filter(isTruthy)
     .filter(poetAnchorHasCorrectPrefix)
     .map(poetAnchorWithBlockData(block))
 
