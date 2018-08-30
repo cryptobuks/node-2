@@ -4,12 +4,11 @@ import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import * as Pino from 'pino'
 
-import { Block } from 'Interfaces'
-
-import { blockToPoetAnchors, GetBlockVerbosity } from 'Helpers/Bitcoin'
+import { Block, GetBlockVerbosity } from 'Helpers/Bitcoin'
 import { childWithFileName } from 'Helpers/Logging'
 import { Messaging } from 'Messaging/Messaging'
 
+import { blockToPoetAnchors } from './Bitcoin'
 import { ClaimControllerConfiguration } from './ClaimControllerConfiguration'
 
 @injectable()

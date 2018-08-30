@@ -1,62 +1,67 @@
-import { PoetTimestamp, TransactionPoetTimestamp } from '@po.et/poet-js'
-
-import { Block, Transaction, VOut } from 'Interfaces'
-
 export const PREFIX_POET = 'POET'
 export const PREFIX_BARD = 'BARD'
 
-interface VOutWithTxId extends VOut {
-  readonly transactionId: string
-}
-
-export const blockToPoetAnchors = (block: Block): ReadonlyArray<PoetTimestamp> =>
-  block.tx
-    .map(transactionToPoetAnchor)
-    .filter(_ => _)
-    .filter(poetAnchorHasCorrectPrefix)
-    .map(poetAnchorWithBlockData(block))
-
-function transactionToPoetAnchor(transaction: Transaction): TransactionPoetTimestamp | undefined {
-  const outputs = transactionToOutputs(transaction)
-  const dataOutput = outputs.find(outputIsDataOutput)
-  return dataOutput && dataOutputToPoetAnchor(dataOutput)
-}
-
-const transactionToOutputs = (transaction: Transaction): ReadonlyArray<VOutWithTxId> =>
-  transaction.vout.map(vout => ({
-    ...vout,
-    transactionId: transaction.txid,
-  }))
-
-const outputIsDataOutput = (output: VOut) => output.scriptPubKey.type === 'nulldata'
-
-const dataOutputToPoetAnchor = (dataOutput: VOutWithTxId): TransactionPoetTimestamp => {
-  const { asm } = dataOutput.scriptPubKey
-  const data = asm.split(' ')[1]
-  const buffer = Buffer.from(data, 'hex')
-  const prefix = buffer.slice(0, 4).toString()
-  const version = Array.from(buffer.slice(4, 8))
-  const ipfsDirectoryHash = buffer.slice(8).toString()
-  return {
-    transactionId: dataOutput.transactionId,
-    outputIndex: null,
-    prefix,
-    version,
-    ipfsDirectoryHash,
-  }
-}
-
-const poetAnchorHasCorrectPrefix = (poetAnchor: TransactionPoetTimestamp) =>
-  [PREFIX_BARD, PREFIX_POET].includes(poetAnchor.prefix)
-
-const poetAnchorWithBlockData = (block: Block) => (poetAnchor: TransactionPoetTimestamp): PoetTimestamp => ({
-  ...poetAnchor,
-  blockHeight: block.height,
-  blockHash: block.hash,
-})
+// Interfaces and Enums used with Bitcoin Core's RPC.
 
 export enum GetBlockVerbosity {
   Hex = 0,
   Parsed = 1,
   Transactions = 2,
+}
+
+export interface Block {
+  hash: string
+  confirmations: number
+  strippedsize: number
+  size: number
+  weight: number
+  height: number
+  version: number
+  versionHex: string
+  merkleroot: string
+  tx: ReadonlyArray<Transaction>
+  time: number
+  mediantime: number
+  nonce: number
+  bits: string
+  difficulty: string
+  chainwork: string
+  nTx: number
+  previousblockhash: string
+  nextblockhash: string
+}
+
+export interface Transaction {
+  txid: string
+  hash: string
+  version: number
+  size: number
+  vsize: number
+  locktime: number
+  vin: ReadonlyArray<VIn>
+  vout: ReadonlyArray<VOut>
+  hex: string
+}
+
+export interface VIn {
+  sequence: number
+  coinbase?: string
+  txid?: string
+  vout?: number
+  scriptSig?: {
+    asm: string
+    hex: string
+  }
+}
+
+export interface VOut {
+  value: number
+  n: number
+  scriptPubKey: {
+    asm: string
+    hex: string
+    type: string
+    reqSigs: number
+    addresses: ReadonlyArray<string>
+  }
 }
