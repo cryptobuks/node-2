@@ -8,7 +8,7 @@ import { blockToPoetAnchors } from './Bitcoin'
 
 import * as TestBlock from './TestData/block-00000000000151360aad32397ff1cf7dd303bed163b0ef425e71a53ccdec7312.json'
 
-describe('Bitcoin.blockToPoetAnchors', async (should: any) => {
+describe('Bitcoin.blockToPoetAnchors', async should => {
   const { assert } = should()
 
   assert({
