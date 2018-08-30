@@ -38,7 +38,7 @@ describe('Bitcoin.blockToPoetAnchors', async should => {
 
     const anchorsIpfsHashes = poetAnchors.map(poetAnchor => poetAnchor.ipfsDirectoryHash)
 
-    const given = 'a test block with Po.et anchors, blockToPoetAnchors'
+    const given = 'a test block with Po.et anchors'
 
     assert({
       given,
