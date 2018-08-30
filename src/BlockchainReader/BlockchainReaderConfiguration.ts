@@ -1,4 +1,4 @@
-import { BitcoinRPCConfiguration, LoggingConfiguration} from 'Configuration'
+import { BitcoinRPCConfiguration, LoggingConfiguration } from 'Configuration'
 
 import { BlockchainReaderServiceConfiguration } from './BlockchainReaderServiceConfiguration'
 import { ClaimControllerConfiguration } from './ClaimControllerConfiguration'
