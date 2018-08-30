@@ -39,7 +39,6 @@
   },
   "dependencies": {
     "@po.et/poet-js": "2.0.0",
-    "@types/ramda": "^0.25.36",
     "amqplib": "0.5.2",
     "bitcoin-core": "^2.0.0",
     "bitcore-lib": "0.15.0",
