@@ -5,7 +5,6 @@ import * as Pino from 'pino'
 import { pipeP } from 'ramda'
 
 import { childWithFileName } from 'Helpers/Logging'
-import { Messaging } from 'Messaging/Messaging'
 
 import { IPFS } from './IPFS'
 
@@ -31,19 +30,16 @@ export class ClaimController {
   private readonly logger: Pino.Logger
   private readonly db: Db
   private readonly collection: Collection
-  private readonly messaging: Messaging
   private readonly ipfs: IPFS
 
   constructor(
     @inject('Logger') logger: Pino.Logger,
     @inject('DB') db: Db,
-    @inject('Messaging') messaging: Messaging,
     @inject('IPFS') ipfs: IPFS
   ) {
     this.logger = childWithFileName(logger, __filename)
     this.db = db
     this.collection = this.db.collection('storageWriterClaims')
-    this.messaging = messaging
     this.ipfs = ipfs
   }
 
@@ -76,7 +72,12 @@ export class ClaimController {
   private readonly addClaimToDatabase = (claim: Claim) =>
     this.collection.insertOne({ claimId: claim.id, claim, storageAttempts: 0, ipfsFileHash: null })
 
-  private readonly storeClaimToStorage = (claim: Claim) => this.ipfs.addText(JSON.stringify(claim))
+  private readonly storeClaimToStorageErrorHandler = (claimId: string) => (message: string) => {
+    this.collection.findOneAndUpdate({ claimId }, { $set { }})
+    throw new Error(message);
+  }
+
+  private readonly storeClaimToStorage = (claim: Claim) => this.ipfs.addText(JSON.stringify(claim)).catch(this.storeClaimToStorageErrorHandler(claim.id))
 
   private readonly storeClaim = async (
     claimEntry: ClaimEntry
