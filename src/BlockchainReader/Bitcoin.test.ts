@@ -4,7 +4,7 @@ import { describe } from 'riteway'
 
 import { PREFIX_POET, PREFIX_BARD } from 'Helpers/Bitcoin'
 
-import { blockToPoetAnchors, getMatchingAnchors } from './Bitcoin'
+import { anchorPrefixAndVersionMatch, blockToPoetAnchors } from './Bitcoin'
 
 import * as TestBlock from './TestData/block-00000000000151360aad32397ff1cf7dd303bed163b0ef425e71a53ccdec7312.json'
 
@@ -95,13 +95,13 @@ describe('Bitcoin.getMatchingAnchors', async should => {
   const { assert } = should('return only the ones matching prefix and version')
 
   const anchorPoet0001 = {
-    transactionId: 'asd',
+    transactionId: '0b801f8cc7bec11048b18d9591d35eb747cfcbd1945ad4a72d6baf8f74c7da2e',
     outputIndex: 0,
     prefix: PREFIX_POET,
     version: [0, 0, 0, 1],
-    ipfsDirectoryHash: 'asd',
-    blockHeight: 156,
-    blockHash: 'asd',
+    ipfsDirectoryHash: 'QmWC8kTX1G75txRTFNaPhFukk222rxGgEjh2wKCKesj7Gw',
+    blockHeight: 1411304,
+    blockHash: '0000000000000011c35856348a9deb2a066facd71efb594a8429284022a99bdc',
   }
 
   const anchorPoet0002 = {
@@ -136,31 +136,31 @@ describe('Bitcoin.getMatchingAnchors', async should => {
 
   assert({
     given,
-    actual: getMatchingAnchors(anchors, PREFIX_POET, [0, 0, 0, 1]),
+    actual: anchors.filter(anchorPrefixAndVersionMatch(PREFIX_POET, [0, 0, 0, 1])),
     expected: [anchorPoet0001, anchorPoet0001b],
   })
 
   assert({
     given,
-    actual: getMatchingAnchors(anchors, PREFIX_BARD, [0, 0, 0, 1]),
+    actual: anchors.filter(anchorPrefixAndVersionMatch(PREFIX_BARD, [0, 0, 0, 1])),
     expected: [anchorBard0001],
   })
 
   assert({
     given,
-    actual: getMatchingAnchors(anchors, PREFIX_POET, [0, 0, 0, 2]),
+    actual: anchors.filter(anchorPrefixAndVersionMatch(PREFIX_POET, [0, 0, 0, 2])),
     expected: [anchorPoet0002],
   })
 
   assert({
     given,
-    actual: getMatchingAnchors(anchors, PREFIX_BARD, [0, 0, 0, 2]),
+    actual: anchors.filter(anchorPrefixAndVersionMatch(PREFIX_BARD, [0, 0, 0, 2])),
     expected: [anchorBard0002],
   })
 
   assert({
     given,
-    actual: getMatchingAnchors(anchors, PREFIX_BARD, [0, 0, 0, 3]),
+    actual: anchors.filter(anchorPrefixAndVersionMatch(PREFIX_BARD, [0, 0, 0, 3])),
     expected: [],
   })
 })

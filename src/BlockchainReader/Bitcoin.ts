@@ -54,12 +54,9 @@ const poetAnchorWithBlockData = (block: Block) => (poetAnchor: TransactionPoetTi
   blockHash: block.hash,
 })
 
-export const anchorPrefixMatches = (prefix: string) => (anchor: PoetTimestamp) => equals(anchor.prefix, prefix)
-export const anchorVersionMatches = (version: ReadonlyArray<number>) => (anchor: PoetTimestamp) =>
+const anchorPrefixMatches = (prefix: string) => (anchor: PoetTimestamp) => equals(anchor.prefix, prefix)
+const anchorVersionMatches = (version: ReadonlyArray<number>) => (anchor: PoetTimestamp) =>
   equals(anchor.version, version)
 
-export const getMatchingAnchors = (
-  anchors: ReadonlyArray<PoetTimestamp>,
-  prefix: string,
-  version: ReadonlyArray<number>
-) => anchors.filter(allPass([anchorPrefixMatches(prefix), anchorVersionMatches(version)]))
+export const anchorPrefixAndVersionMatch = (prefix: string, version: ReadonlyArray<number>) =>
+  allPass([anchorPrefixMatches(prefix), anchorVersionMatches(version)])

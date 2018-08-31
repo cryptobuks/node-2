@@ -2,12 +2,13 @@ import BitcoinCore = require('bitcoin-core')
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import * as Pino from 'pino'
+import { filter, reject } from 'ramda'
 
 import { Block, GetBlockVerbosity } from 'Helpers/Bitcoin'
 import { childWithFileName } from 'Helpers/Logging'
 import { Messaging } from 'Messaging/Messaging'
 
-import { blockToPoetAnchors, getMatchingAnchors } from './Bitcoin'
+import { anchorPrefixAndVersionMatch, blockToPoetAnchors } from './Bitcoin'
 import { ClaimControllerConfiguration } from './ClaimControllerConfiguration'
 
 @injectable()
@@ -51,22 +52,22 @@ export class ClaimController {
 
     const block: Block = await this.bitcoinCore.getBlock(blockHash, GetBlockVerbosity.Transactions)
 
-    const poetAnchors = blockToPoetAnchors(block)
+    const anchors = blockToPoetAnchors(block)
 
-    const matchingPoetTimestamps = getMatchingAnchors(
-      poetAnchors,
+    const anchorPrefixAndVersionMatchConfiguration = anchorPrefixAndVersionMatch(
       this.configuration.poetNetwork,
       this.configuration.poetVersion
     )
 
-    const unmatchingPoetTimestamps = poetAnchors.filter(_ => !matchingPoetTimestamps.includes(_))
+    const matchingAnchors = filter(anchorPrefixAndVersionMatchConfiguration, anchors)
+    const unmatchingAnchors = reject(anchorPrefixAndVersionMatchConfiguration, anchors)
 
     logger.trace(
       {
         blockHeight,
         blockHash,
-        matchingPoetTimestamps,
-        unmatchingPoetTimestamps,
+        matchingAnchors,
+        unmatchingAnchors,
       },
       'Block retrieved and scanned successfully'
     )
@@ -76,14 +77,14 @@ export class ClaimController {
       {
         $set: {
           blockHash,
-          matchingPoetTimestamps,
-          unmatchingPoetTimestamps,
+          matchingAnchors,
+          unmatchingAnchors,
         },
       },
       { upsert: true }
     )
 
-    if (matchingPoetTimestamps.length) await this.messaging.publishPoetTimestampsDownloaded(matchingPoetTimestamps)
+    if (matchingAnchors.length) await this.messaging.publishPoetTimestampsDownloaded(matchingAnchors)
   }
 
   async findHighestBlockHeight(): Promise<number | null> {
