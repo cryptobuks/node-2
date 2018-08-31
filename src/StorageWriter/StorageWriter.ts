@@ -9,6 +9,8 @@ import { ClaimController } from './ClaimController'
 import { IPFS } from './IPFS'
 import { IPFSConfiguration } from './IPFSConfiguration'
 import { Router } from './Router'
+import { Service } from './Service'
+import { ServiceConfiguration } from './ServiceConfiguration'
 import { StorageWriterConfiguration } from './StorageWriterConfiguration'
 
 @injectable()
@@ -19,6 +21,7 @@ export class StorageWriter {
   private dbConnection: Db
   private router: Router
   private messaging: Messaging
+  private service: Service
 
   constructor(configuration: StorageWriterConfiguration) {
     this.configuration = configuration
@@ -38,6 +41,9 @@ export class StorageWriter {
     this.router = this.container.get('Router')
     await this.router.start()
 
+    this.service = this.container.get('Service')
+    await this.service.start()
+
     await this.createIndices()
 
     this.logger.info('StorageWriter Started')
@@ -53,11 +59,14 @@ export class StorageWriter {
     })
     this.container.bind<ClaimController>('ClaimController').to(ClaimController)
     this.container.bind<Messaging>('Messaging').toConstantValue(this.messaging)
+    this.container.bind<Service>('Service').to(Service)
+    this.container.bind<ServiceConfiguration>('ServiceConfiguration').toConstantValue({
+      uploadClaimIntervalInSeconds: this.configuration.uploadClaimIntervalInSeconds,
+    })
   }
 
   private async createIndices() {
-    const collection = this.dbConnection.collection('storage')
-    await collection.createIndex({ ipfsFileHash: 1 }, { unique: true, name: 'ipfsFileHash-unique' })
-    await collection.createIndex({ attempts: 1 }, { name: 'attempts' })
+    const collection = this.dbConnection.collection('storageWriterClaims')
+    await collection.createIndex({ ipfsFileHash: 1 }, { unique: true })
   }
 }

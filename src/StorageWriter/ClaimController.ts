@@ -2,7 +2,7 @@ import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import * as Pino from 'pino'
-import { pipeM, lensProp } from 'ramda'
+import { pipeM } from 'ramda'
 
 import { childWithFileName } from 'Helpers/Logging'
 import { Messaging } from 'Messaging/Messaging'
@@ -11,14 +11,18 @@ import { IPFS } from './IPFS'
 
 const MAX_STORAGE_ATTEMPTS = 20
 
-const L = {
-  result: lensProp('result'),
-  error: lensProp('error')
+interface ClaimEntry {
+  readonly _id: string
+  readonly claim: Claim
+  readonly ipfsFileHash: string
+  readonly lastStorageAttemptTime: number
+  readonly storageAttempts: number
 }
 
-interface Retry {
-  readonly successTime: number
-  readonly attempts: number
+enum LogTypes {
+  'info',
+  'trace',
+  'error',
 }
 
 @injectable()
@@ -42,11 +46,7 @@ export class ClaimController {
     this.ipfs = ipfs
   }
 
-  
-
-  private addClaimToDatabase = (claim: Claim) => this.collection.insertOne({ claim, storageAttempts: 0, ipfsFileHash: null })
-
-  async addClaim(claim: Claim): Promise<void> {
+  public readonly addClaim = async (claim: Claim): Promise<void> => {
     const logger = this.logger.child({ method: 'addClaim' })
 
     logger.trace({ claim }, 'Adding Claim')
@@ -56,38 +56,65 @@ export class ClaimController {
     logger.info({ claim }, 'Claim Added')
   }
 
-  
+  private readonly getNextClaimFromDatabase = () =>
+    this.collection.findOneAndUpdate(
+      { ipfsFileHash: null, storageAttempts: { $lt: MAX_STORAGE_ATTEMPTS } },
+      {
+        $inc: { storageAttempts: 1 },
+        $set: { lastStorageAttemptTime: new Date().getTime() },
+      }
+    )
 
-  getNextClaimFromDatabase = () => this.collection.findOneAndUpdate({ ipfsFileHash: null, storageAttempts: { $lt: MAX_STORAGE_ATTEMPTS } }, { $inc: { storageAttempts: 1 }, })
+  private readonly getNextClaim = async () => this.getNextClaimFromDatabase()
 
-  getNextClaim = async () => {
-    const logger = this.logger.child({ method: 'create' })
+  private readonly addClaimToDatabase = (claim: Claim) =>
+    this.collection.insertOne({ claim, storageAttempts: 0, ipfsFileHash: null })
 
-    logger.trace('Getting Claim')
+  private readonly storeClaimToStorage = (claim: Claim) => this.ipfs.addText(JSON.stringify(claim))
 
-    const response = await this.getNextClaimFromDatabase()
-
-    logger.info({ claim }, 'Claim Stored')
-
-    return claim
-  }
-
-  private storeClaimToStorage = (claim: Claim) => this.ipfs.addText(JSON.stringify(claim))
-
-  private async storeClaim(claim: Claim): Promise<{claim: Claim, ipfsFileHash:string}> {
-    const logger = this.logger.child({ method: 'create' })
-
-    logger.trace({ claim }, 'Storing Claim')
-
-    const ipfsFileHash = await this.storeClaimToStorage(claim)
-
-    logger.info({ claim, ipfsFileHash }, 'Claim Stored')
+  private readonly storeClaim = async (
+    claimEntry: ClaimEntry
+  ): Promise<{ claimEntry: ClaimEntry; ipfsFileHash: string }> => {
+    const ipfsFileHash = await this.storeClaimToStorage(claimEntry.claim)
 
     return {
       ipfsFileHash,
-      claim
+      claimEntry,
     }
   }
 
-  public storeNextClaim = pipeM(this.getNextClaim, this.storeClaim)
+  private readonly addIPFSHashByClaimEntryById = (entryId: string, ipfsFileHash: string) =>
+    this.collection.findOneAndUpdate({ _id: entryId }, { $set: { ipfsFileHash } })
+
+  private readonly addIPFSHashToClaimEntry = async ({
+    claimEntry,
+    ipfsFileHash,
+  }: {
+    claimEntry: ClaimEntry
+    ipfsFileHash: string
+  }): Promise<{ claim: Claim; ipfsFileHash: string }> => {
+    await this.addIPFSHashByClaimEntryById(claimEntry._id, ipfsFileHash)
+
+    return {
+      ipfsFileHash,
+      claim: claimEntry.claim,
+    }
+  }
+
+  private readonly log = (level: LogTypes) => (message: string) => (value: any) => {
+    const logger = this.logger
+    logger[level]({ value }, message)
+    return value
+  }
+
+  // tslint:disable-next-line
+  public storeNextClaim = pipeM(
+    this.log(LogTypes.info)('Finding Claim'),
+    this.getNextClaim,
+    this.log(LogTypes.info)('Storing Claim'),
+    this.storeClaim,
+    this.log(LogTypes.info)('Adding IPFS hash to Claim Entry'),
+    this.addIPFSHashToClaimEntry,
+    this.log(LogTypes.info)('Finishied Storing Claim')
+  )
 }

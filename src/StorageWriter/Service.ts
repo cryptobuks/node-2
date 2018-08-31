@@ -39,7 +39,7 @@ export class Service {
   private uploadNextClaim = async () => {
     const logger = this.logger.child({ method: 'readNextDirectory' })
     try {
-      await this.messaging.publish(Exchange.StorageWriterUploadNextClaim, '')
+      await this.messaging.publish(Exchange.StorageWriterStoreNextClaim, '')
     } catch (error) {
       logger.error({ error }, 'Uncaught exception in StorageWriter Service')
     }

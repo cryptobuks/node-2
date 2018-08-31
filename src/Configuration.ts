@@ -35,6 +35,8 @@ export interface Configuration extends LoggingConfiguration {
   readonly batchCreationIntervalInSeconds: number
 
   readonly readDirectoryIntervalInSeconds: number
+
+  readonly uploadClaimIntervalInSeconds: number
 }
 
 export interface LoggingConfiguration {
@@ -68,6 +70,8 @@ const defaultConfiguration: Configuration = {
   batchCreationIntervalInSeconds: 600,
 
   readDirectoryIntervalInSeconds: 30,
+
+  uploadClaimIntervalInSeconds: 30,
 
   s3Url: undefined,
   forceBlockHeight: undefined,

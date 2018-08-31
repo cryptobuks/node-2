@@ -113,6 +113,7 @@ async function main() {
     dbUrl: configuration.mongodbUrl,
     ipfsUrl: configuration.ipfsUrl,
     rabbitmqUrl: configuration.rabbitmqUrl,
+    uploadClaimIntervalInSeconds: configuration.uploadClaimIntervalInSeconds
   })
 
   try {
