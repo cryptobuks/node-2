@@ -1,6 +1,6 @@
 import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
-import { Collection, Db } from 'mongodb'
+import { Collection, Db, FindAndModifyWriteOpResultObject } from 'mongodb'
 import * as Pino from 'pino'
 import { pipeP } from 'ramda'
 
@@ -13,6 +13,7 @@ const MAX_STORAGE_ATTEMPTS = 20
 
 interface ClaimEntry {
   readonly _id: string
+  readonly claimId: string
   readonly claim: Claim
   readonly ipfsFileHash: string
   readonly lastStorageAttemptTime: number
@@ -65,10 +66,14 @@ export class ClaimController {
       }
     )
 
-  private readonly getNextClaim = async () => this.getNextClaimFromDatabase()
+    private readonly getResponseValue = (response: FindAndModifyWriteOpResultObject) => Promise.resolve(response.value)
+
+  private readonly getNextClaim = pipeP(this.getNextClaimFromDatabase, this.getResponseValue)
+
+  
 
   private readonly addClaimToDatabase = (claim: Claim) =>
-    this.collection.insertOne({ claim, storageAttempts: 0, ipfsFileHash: null })
+    this.collection.insertOne({ claimId: claim.id, claim, storageAttempts: 0, ipfsFileHash: null })
 
   private readonly storeClaimToStorage = (claim: Claim) => this.ipfs.addText(JSON.stringify(claim))
 
