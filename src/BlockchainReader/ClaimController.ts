@@ -1,4 +1,3 @@
-import { PoetTimestamp } from '@po.et/poet-js'
 import BitcoinCore = require('bitcoin-core')
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
@@ -8,7 +7,7 @@ import { Block, GetBlockVerbosity } from 'Helpers/Bitcoin'
 import { childWithFileName } from 'Helpers/Logging'
 import { Messaging } from 'Messaging/Messaging'
 
-import { blockToPoetAnchors } from './Bitcoin'
+import { blockToPoetAnchors, getMatchingAnchors } from './Bitcoin'
 import { ClaimControllerConfiguration } from './ClaimControllerConfiguration'
 
 @injectable()
@@ -54,9 +53,11 @@ export class ClaimController {
 
     const poetAnchors = blockToPoetAnchors(block)
 
-    const matchingPoetTimestamps = poetAnchors
-      .filter(this.poetTimestampNetworkMatches)
-      .filter(this.poetTimestampVersionMatches)
+    const matchingPoetTimestamps = getMatchingAnchors(
+      poetAnchors,
+      this.configuration.poetNetwork,
+      this.configuration.poetVersion
+    )
 
     const unmatchingPoetTimestamps = poetAnchors.filter(_ => !matchingPoetTimestamps.includes(_))
 
@@ -100,14 +101,4 @@ export class ClaimController {
     return highestBlockHeight
   }
 
-  private poetTimestampNetworkMatches = (blockchainPoetMessage: PoetTimestamp) => {
-    return blockchainPoetMessage.prefix === this.configuration.poetNetwork
-  }
-
-  private poetTimestampVersionMatches = (blockchainPoetMessage: PoetTimestamp) => {
-    if (blockchainPoetMessage.version.length !== this.configuration.poetVersion.length) return false
-    for (let i = 0; i < blockchainPoetMessage.version.length; i++)
-      if (blockchainPoetMessage.version[i] !== this.configuration.poetVersion[i]) return false
-    return true
-  }
 }

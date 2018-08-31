@@ -2,9 +2,9 @@ import { PoetTimestamp } from '@po.et/poet-js'
 import { allPass, equals } from 'ramda'
 import { describe } from 'riteway'
 
-import { PREFIX_BARD } from 'Helpers/Bitcoin'
+import { PREFIX_POET, PREFIX_BARD } from 'Helpers/Bitcoin'
 
-import { blockToPoetAnchors } from './Bitcoin'
+import { blockToPoetAnchors, getMatchingAnchors } from './Bitcoin'
 
 import * as TestBlock from './TestData/block-00000000000151360aad32397ff1cf7dd303bed163b0ef425e71a53ccdec7312.json'
 
@@ -89,6 +89,80 @@ describe('Bitcoin.blockToPoetAnchors', async should => {
       expected: true,
     })
   }
+})
+
+describe('Bitcoin.getMatchingAnchors', async should => {
+  const { assert } = should('return only the ones matching prefix and version')
+
+  const anchorPoet0001 = {
+    transactionId: 'asd',
+    outputIndex: 0,
+    prefix: PREFIX_POET,
+    version: [0, 0, 0, 1],
+    ipfsDirectoryHash: 'asd',
+    blockHeight: 156,
+    blockHash: 'asd',
+  }
+
+  const anchorPoet0002 = {
+    ...anchorPoet0001,
+    version: [0, 0, 0, 2],
+  }
+
+  const anchorBard0001 = {
+    ...anchorPoet0001,
+    prefix: PREFIX_BARD,
+  }
+
+  const anchorBard0002 = {
+    ...anchorBard0001,
+    version: [0, 0, 0, 2],
+  }
+
+  const anchorPoet0001b = {
+    ...anchorPoet0001,
+    ipfsDirectoryHash: 'asdxx',
+  }
+
+  const anchors: ReadonlyArray<PoetTimestamp> = [
+    anchorPoet0001,
+    anchorPoet0002,
+    anchorBard0001,
+    anchorBard0002,
+    anchorPoet0001b,
+  ]
+
+  const given = 'an array of anchors'
+
+  assert({
+    given,
+    actual: getMatchingAnchors(anchors, PREFIX_POET, [0, 0, 0, 1]),
+    expected: [anchorPoet0001, anchorPoet0001b],
+  })
+
+  assert({
+    given,
+    actual: getMatchingAnchors(anchors, PREFIX_BARD, [0, 0, 0, 1]),
+    expected: [anchorBard0001],
+  })
+
+  assert({
+    given,
+    actual: getMatchingAnchors(anchors, PREFIX_POET, [0, 0, 0, 2]),
+    expected: [anchorPoet0002],
+  })
+
+  assert({
+    given,
+    actual: getMatchingAnchors(anchors, PREFIX_BARD, [0, 0, 0, 2]),
+    expected: [anchorBard0002],
+  })
+
+  assert({
+    given,
+    actual: getMatchingAnchors(anchors, PREFIX_BARD, [0, 0, 0, 3]),
+    expected: [],
+  })
 })
 
 // Would be way better to validate the block's hash

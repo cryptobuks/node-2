@@ -1,4 +1,5 @@
 import { PoetTimestamp, TransactionPoetTimestamp } from '@po.et/poet-js'
+import { equals, allPass } from 'ramda'
 
 import { PREFIX_BARD, PREFIX_POET, Block, Transaction, VOut } from 'Helpers/Bitcoin'
 import { isTruthy } from 'Helpers/isTruthy'
@@ -52,3 +53,13 @@ const poetAnchorWithBlockData = (block: Block) => (poetAnchor: TransactionPoetTi
   blockHeight: block.height,
   blockHash: block.hash,
 })
+
+export const anchorPrefixMatches = (prefix: string) => (anchor: PoetTimestamp) => equals(anchor.prefix, prefix)
+export const anchorVersionMatches = (version: ReadonlyArray<number>) => (anchor: PoetTimestamp) =>
+  equals(anchor.version, version)
+
+export const getMatchingAnchors = (
+  anchors: ReadonlyArray<PoetTimestamp>,
+  prefix: string,
+  version: ReadonlyArray<number>
+) => anchors.filter(allPass([anchorPrefixMatches(prefix), anchorVersionMatches(version)]))
