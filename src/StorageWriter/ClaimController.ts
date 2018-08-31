@@ -2,7 +2,7 @@ import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import * as Pino from 'pino'
-import { pipeM } from 'ramda'
+import { pipeP } from 'ramda'
 
 import { childWithFileName } from 'Helpers/Logging'
 import { Messaging } from 'Messaging/Messaging'
@@ -20,9 +20,9 @@ interface ClaimEntry {
 }
 
 enum LogTypes {
-  'info',
-  'trace',
-  'error',
+  'info' = 'info',
+  'trace' = 'trace',
+  'error' = 'error',
 }
 
 @injectable()
@@ -101,20 +101,20 @@ export class ClaimController {
     }
   }
 
-  private readonly log = (level: LogTypes) => (message: string) => (value: any) => {
+  private readonly log = (level: LogTypes) => (message: string) => async (value: any) => {
     const logger = this.logger
     logger[level]({ value }, message)
     return value
   }
 
   // tslint:disable-next-line
-  public storeNextClaim = pipeM(
+  public storeNextClaim = pipeP(
     this.log(LogTypes.info)('Finding Claim'),
     this.getNextClaim,
     this.log(LogTypes.info)('Storing Claim'),
     this.storeClaim,
     this.log(LogTypes.info)('Adding IPFS hash to Claim Entry'),
     this.addIPFSHashToClaimEntry,
-    this.log(LogTypes.info)('Finishied Storing Claim')
+    this.log(LogTypes.info)('Finished Storing Claim')
   )
 }
