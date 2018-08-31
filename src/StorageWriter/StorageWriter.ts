@@ -67,6 +67,6 @@ export class StorageWriter {
 
   private async createIndices() {
     const collection = this.dbConnection.collection('storageWriterClaims')
-    await collection.createIndex({ claimId : 1 }, { unique: true })
+    await collection.createIndex({ claimId: 1 }, { unique: true })
   }
 }

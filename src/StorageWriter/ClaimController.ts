@@ -66,11 +66,12 @@ export class ClaimController {
       }
     )
 
-    private readonly getResponseValue = (response: FindAndModifyWriteOpResultObject) => Promise.resolve(response.value)
+  private readonly getResponseValue = (response: FindAndModifyWriteOpResultObject) => Promise.resolve(response.value)
 
-  private readonly getNextClaim = pipeP(this.getNextClaimFromDatabase, this.getResponseValue)
-
-  
+  private readonly getNextClaim = pipeP(
+    this.getNextClaimFromDatabase,
+    this.getResponseValue
+  )
 
   private readonly addClaimToDatabase = (claim: Claim) =>
     this.collection.insertOne({ claimId: claim.id, claim, storageAttempts: 0, ipfsFileHash: null })
