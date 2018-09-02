@@ -59,11 +59,10 @@ export class ClaimController {
 
   private readonly serializeClaim = async (claim: Claim) => JSON.stringify(claim)
 
-  private readonly storeClaim = (claim: Claim) =>
-    pipeP(
-      this.serializeClaim,
-      this.ipfs.addText
-    )
+  private readonly storeClaim = pipeP(
+    this.serializeClaim,
+    this.ipfs.addText
+  )
 
   private storeNextClaimStoreClaimErrorHandler = (claim: Claim) => async (error: Error) => {
     await this.db.errorAdd({ claim, error })
