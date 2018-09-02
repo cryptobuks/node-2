@@ -1,23 +1,12 @@
 import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
-import { Collection, Db, FindAndModifyWriteOpResultObject } from 'mongodb'
 import * as Pino from 'pino'
-import { pipeP } from 'ramda'
+import { pipeP, lensPath, view } from 'ramda'
 
 import { childWithFileName } from 'Helpers/Logging'
 
 import { IPFS } from './IPFS'
-
-const MAX_STORAGE_ATTEMPTS = 20
-
-interface ClaimEntry {
-  readonly _id: string
-  readonly claimId: string
-  readonly claim: Claim
-  readonly ipfsFileHash: string
-  readonly lastStorageAttemptTime: number
-  readonly storageAttempts: number
-}
+import { Database } from './Database'
 
 enum LogTypes {
   'info' = 'info',
@@ -25,87 +14,29 @@ enum LogTypes {
   'error' = 'error',
 }
 
+interface StoreNextClaimFlow {
+  claim: Claim,
+  ipfsFileHash?: string
+}
+
+const L = {
+  id: lensPath('id'),
+  value: lensPath('value')
+}
+
 @injectable()
 export class ClaimController {
   private readonly logger: Pino.Logger
-  private readonly db: Db
-  private readonly collection: Collection
+  private readonly db: Database
   private readonly ipfs: IPFS
 
   constructor(
     @inject('Logger') logger: Pino.Logger,
-    @inject('DB') db: Db,
+    @inject('DB') db: Database,
     @inject('IPFS') ipfs: IPFS
   ) {
     this.logger = childWithFileName(logger, __filename)
-    this.db = db
-    this.collection = this.db.collection('storageWriterClaims')
     this.ipfs = ipfs
-  }
-
-  public readonly addClaim = async (claim: Claim): Promise<void> => {
-    const logger = this.logger.child({ method: 'addClaim' })
-
-    logger.trace({ claim }, 'Adding Claim')
-
-    await this.addClaimToDatabase(claim)
-
-    logger.info({ claim }, 'Claim Added')
-  }
-
-  private readonly getNextClaimFromDatabase = () =>
-    this.collection.findOneAndUpdate(
-      { ipfsFileHash: null, storageAttempts: { $lt: MAX_STORAGE_ATTEMPTS } },
-      {
-        $inc: { storageAttempts: 1 },
-        $set: { lastStorageAttemptTime: new Date().getTime() },
-      }
-    )
-
-  private readonly getResponseValue = (response: FindAndModifyWriteOpResultObject) => Promise.resolve(response.value)
-
-  private readonly getNextClaim = pipeP(
-    this.getNextClaimFromDatabase,
-    this.getResponseValue
-  )
-
-  private readonly addClaimToDatabase = (claim: Claim) =>
-    this.collection.insertOne({ claimId: claim.id, claim, storageAttempts: 0, ipfsFileHash: null })
-
-  private readonly storeClaimToStorageErrorHandler = (claimId: string) => (message: string) => {
-    this.collection.findOneAndUpdate({ claimId }, { $set { }})
-    throw new Error(message);
-  }
-
-  private readonly storeClaimToStorage = (claim: Claim) => this.ipfs.addText(JSON.stringify(claim)).catch(this.storeClaimToStorageErrorHandler(claim.id))
-
-  private readonly storeClaim = async (
-    claimEntry: ClaimEntry
-  ): Promise<{ claimEntry: ClaimEntry; ipfsFileHash: string }> => {
-    const ipfsFileHash = await this.storeClaimToStorage(claimEntry.claim)
-
-    return {
-      ipfsFileHash,
-      claimEntry,
-    }
-  }
-
-  private readonly addIPFSHashByClaimEntryById = (entryId: string, ipfsFileHash: string) =>
-    this.collection.findOneAndUpdate({ _id: entryId }, { $set: { ipfsFileHash } })
-
-  private readonly addIPFSHashToClaimEntry = async ({
-    claimEntry,
-    ipfsFileHash,
-  }: {
-    claimEntry: ClaimEntry
-    ipfsFileHash: string
-  }): Promise<{ claim: Claim; ipfsFileHash: string }> => {
-    await this.addIPFSHashByClaimEntryById(claimEntry._id, ipfsFileHash)
-
-    return {
-      ipfsFileHash,
-      claim: claimEntry.claim,
-    }
   }
 
   private readonly log = (level: LogTypes) => (message: string) => async (value: any) => {
@@ -114,14 +45,71 @@ export class ClaimController {
     return value
   }
 
+  public readonly addClaim = async (claim: Claim): Promise<void> => {
+    const logger = this.logger.child({ method: 'addClaim' })
+
+    logger.trace({ claim }, 'Adding Claim')
+
+    await this.db.claimAdd(claim)
+
+    logger.info({ claim }, 'Claim Added')
+  }
+
+  private readonly storeNextClaimGetClaimErrorHandler = async (message: string) => {
+    throw new Error('No more claims')
+  }
+
+  private readonly storeNextClaimGetClaim = async (): Promise<StoreNextClaimFlow> => {
+    const claim = await this.db.claimFindNext().catch(this.storeNextClaimGetClaimErrorHandler)
+
+    return {
+      claim
+    }
+  }
+
+  private readonly serializeClaim = async (claim: Claim) => JSON.stringify(claim)
+
+  private readonly storeClaim = (claim: Claim) => pipeP(
+    this.serializeClaim,
+    this.ipfs.addText
+  )
+
+  private storeNextClaimStoreClaimErrorHandler = (claim: Claim) => async (error: Error) => {
+    await this.db.errorAdd({ claim, error })
+    throw new Error('')
+  }
+
+  private readonly storeNextClaimStoreClaim = async ({ claim }: StoreNextClaimFlow): Promise<StoreNextClaimFlow> => {
+    const ipfsFileHash = await this.storeClaim(claim).catch(this.storeNextClaimStoreClaimErrorHandler(claim))
+
+    return {
+      ipfsFileHash,
+      claim,
+    }
+  }
+
+  private readonly storeNextClaimAddIPFSHashToClaim = async ({
+    claim,
+    ipfsFileHash,
+  }: StoreNextClaimFlow): Promise<StoreNextClaimFlow> => {
+    await this.db.claimAddHash(claim.id, ipfsFileHash)
+
+    return {
+      ipfsFileHash,
+      claim: claim,
+    }
+  }
+
+  
+
   // tslint:disable-next-line
   public storeNextClaim = pipeP(
-    this.log(LogTypes.info)('Finding Claim'),
-    this.getNextClaim,
-    this.log(LogTypes.info)('Storing Claim'),
-    this.storeClaim,
-    this.log(LogTypes.info)('Adding IPFS hash to Claim Entry'),
-    this.addIPFSHashToClaimEntry,
-    this.log(LogTypes.info)('Finished Storing Claim')
+    this.log(LogTypes.trace)('Finding Claim'),
+    this.storeNextClaimGetClaim,
+    this.log(LogTypes.trace)('Storing Claim'),
+    this.storeNextClaimStoreClaim,
+    this.log(LogTypes.trace)('Adding IPFS hash to Claim Entry'),
+    this.storeNextClaimAddIPFSHashToClaim,
+    this.log(LogTypes.trace)('Finished Storing Claim')
   )
 }
