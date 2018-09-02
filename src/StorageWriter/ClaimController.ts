@@ -2,6 +2,7 @@ import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import * as Pino from 'pino'
 import { pipeP, lensPath, view } from 'ramda'
+import { StoreNextClaim, setClaim, getClaim, setIPFSFileHash, getIPFSFileHash } from './StoreNextClaim'
 
 import { childWithFileName } from 'Helpers/Logging'
 
@@ -12,11 +13,6 @@ enum LogTypes {
   'info' = 'info',
   'trace' = 'trace',
   'error' = 'error',
-}
-
-interface StoreNextClaimFlow {
-  claim: Claim,
-  ipfsFileHash?: string
 }
 
 const L = {
@@ -59,12 +55,10 @@ export class ClaimController {
     throw new Error('No more claims')
   }
 
-  private readonly storeNextClaimGetClaim = async (): Promise<StoreNextClaimFlow> => {
+  private readonly storeNextClaimGetClaim = async (): Promise<StoreNextClaim> => {
     const claim = await this.db.claimFindNext().catch(this.storeNextClaimGetClaimErrorHandler)
 
-    return {
-      claim
-    }
+    return setClaim(claim, {})
   }
 
   private readonly serializeClaim = async (claim: Claim) => JSON.stringify(claim)
@@ -79,25 +73,16 @@ export class ClaimController {
     throw new Error('')
   }
 
-  private readonly storeNextClaimStoreClaim = async ({ claim }: StoreNextClaimFlow): Promise<StoreNextClaimFlow> => {
-    const ipfsFileHash = await this.storeClaim(claim).catch(this.storeNextClaimStoreClaimErrorHandler(claim))
+  private readonly storeNextClaimStoreClaim = async (data: StoreNextClaim): Promise<StoreNextClaim> => {
+    const ipfsFileHash = await this.storeClaim(getClaim(data)).catch(this.storeNextClaimStoreClaimErrorHandler(getClaim(data)))
 
-    return {
-      ipfsFileHash,
-      claim,
-    }
+    return setIPFSFileHash(ipfsFileHash, data)
   }
 
-  private readonly storeNextClaimAddIPFSHashToClaim = async ({
-    claim,
-    ipfsFileHash,
-  }: StoreNextClaimFlow): Promise<StoreNextClaimFlow> => {
-    await this.db.claimAddHash(claim.id, ipfsFileHash)
+  private readonly storeNextClaimAddIPFSHashToClaim = async (data: StoreNextClaim): Promise<StoreNextClaim> => {
+    await this.db.claimAddHash(getClaim(data).id, getIPFSFileHash(data))
 
-    return {
-      ipfsFileHash,
-      claim: claim,
-    }
+    return data
   }
 
   

@@ -1,11 +1,16 @@
 import { Claim } from '@po.et/poet-js'
-import { lensPath, view, set } from 'ramda'
+import { lensProp, view, set } from 'ramda'
 
-interface StoreNextClaimFlow {
+export interface StoreNextClaim {
   claim: Claim,
   ipfsFileHash?: string
 }
 
-const ipfsFileHash = lensPath('ipfsFileHash')
+const ipfsFileHash = lensProp('ipfsFileHash')
+const claim = lensProp('claim');
 
 export const setIPFSFileHash = set(ipfsFileHash)
+export const getIPFSFileHash = view(ipfsFileHash)
+
+export const setClaim = set(claim)
+export const getClaim = view(claim)

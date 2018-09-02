@@ -2,11 +2,11 @@ import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import { Claim } from '@po.et/poet-js'
 import { Database } from './Database'
-import { lensPath, view } from 'ramda'
+import { lensProp, view } from 'ramda'
 
 const L = {
-  id: lensPath('id'),
-  value: lensPath('value')
+  id: lensProp('id'),
+  value: lensProp('value')
 }
 
 const MAX_STORAGE_ATTEMPTS = 20
