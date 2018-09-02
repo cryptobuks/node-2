@@ -1,13 +1,13 @@
 import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import * as Pino from 'pino'
-import { pipeP, lensPath, view } from 'ramda'
-import { StoreNextClaim, setClaim, getClaim, setIPFSFileHash, getIPFSFileHash } from './StoreNextClaim'
+import { pipeP, lensPath } from 'ramda'
+import { StoreNextClaimData, setClaim, getClaim, setIPFSFileHash, getIPFSFileHash } from './StoreNextClaimData'
 
 import { childWithFileName } from 'Helpers/Logging'
 
-import { IPFS } from './IPFS'
 import { Database } from './Database'
+import { IPFS } from './IPFS'
 
 enum LogTypes {
   'info' = 'info',
@@ -17,7 +17,7 @@ enum LogTypes {
 
 const L = {
   id: lensPath('id'),
-  value: lensPath('value')
+  value: lensPath('value'),
 }
 
 @injectable()
@@ -26,11 +26,7 @@ export class ClaimController {
   private readonly db: Database
   private readonly ipfs: IPFS
 
-  constructor(
-    @inject('Logger') logger: Pino.Logger,
-    @inject('DB') db: Database,
-    @inject('IPFS') ipfs: IPFS
-  ) {
+  constructor(@inject('Logger') logger: Pino.Logger, @inject('DB') db: Database, @inject('IPFS') ipfs: IPFS) {
     this.logger = childWithFileName(logger, __filename)
     this.ipfs = ipfs
   }
@@ -55,7 +51,7 @@ export class ClaimController {
     throw new Error('No more claims')
   }
 
-  private readonly storeNextClaimGetClaim = async (): Promise<StoreNextClaim> => {
+  private readonly storeNextClaimGetClaim = async (): Promise<StoreNextClaimData> => {
     const claim = await this.db.claimFindNext().catch(this.storeNextClaimGetClaimErrorHandler)
 
     return setClaim(claim, {})
@@ -63,29 +59,30 @@ export class ClaimController {
 
   private readonly serializeClaim = async (claim: Claim) => JSON.stringify(claim)
 
-  private readonly storeClaim = (claim: Claim) => pipeP(
-    this.serializeClaim,
-    this.ipfs.addText
-  )
+  private readonly storeClaim = (claim: Claim) =>
+    pipeP(
+      this.serializeClaim,
+      this.ipfs.addText
+    )
 
   private storeNextClaimStoreClaimErrorHandler = (claim: Claim) => async (error: Error) => {
     await this.db.errorAdd({ claim, error })
     throw new Error('')
   }
 
-  private readonly storeNextClaimStoreClaim = async (data: StoreNextClaim): Promise<StoreNextClaim> => {
-    const ipfsFileHash = await this.storeClaim(getClaim(data)).catch(this.storeNextClaimStoreClaimErrorHandler(getClaim(data)))
+  private readonly storeNextClaimStoreClaim = async (data: StoreNextClaimData): Promise<StoreNextClaimData> => {
+    const ipfsFileHash = await this.storeClaim(getClaim(data)).catch(
+      this.storeNextClaimStoreClaimErrorHandler(getClaim(data))
+    )
 
     return setIPFSFileHash(ipfsFileHash, data)
   }
 
-  private readonly storeNextClaimAddIPFSHashToClaim = async (data: StoreNextClaim): Promise<StoreNextClaim> => {
+  private readonly storeNextClaimAddIPFSHashToClaim = async (data: StoreNextClaimData): Promise<StoreNextClaimData> => {
     await this.db.claimAddHash(getClaim(data).id, getIPFSFileHash(data))
 
     return data
   }
-
-  
 
   // tslint:disable-next-line
   public storeNextClaim = pipeP(
