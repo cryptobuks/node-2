@@ -1,7 +1,6 @@
 import { describe } from 'riteway';
-import { Claim } from '@po.et/poet-js'
 
-import { setIPFSFileHash, setClaim, getIPFSFileHash, getClaim } from './StoreNextClaim'
+import { setIPFSFileHash, setClaim, getIPFSFileHash, getClaim } from './StoreNextClaimData'
 
 describe('setIPFSFileHash', async should => {
   const { assert } = should('return the correct object');
