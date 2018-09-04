@@ -1,13 +1,14 @@
 import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import * as Pino from 'pino'
-import { pipeP, lensPath } from 'ramda'
-import { StoreNextClaimData, setClaim, getClaim, setIPFSFileHash, getIPFSFileHash } from './StoreNextClaimData'
+import { pipeP, pipe } from 'ramda'
 
 import { childWithFileName } from 'Helpers/Logging'
 
+import { getId } from './Claim'
 import { Database } from './Database'
 import { IPFS } from './IPFS'
+import { StoreNextClaimData, setClaim, getClaim, setIPFSFileHash, getIPFSFileHash } from './StoreNextClaimData'
 
 enum LogTypes {
   'info' = 'info',
@@ -15,10 +16,10 @@ enum LogTypes {
   'error' = 'error',
 }
 
-const L = {
-  id: lensPath('id'),
-  value: lensPath('value'),
-}
+const getClaimId = pipe(
+  getClaim,
+  getId
+)
 
 @injectable()
 export class ClaimController {
@@ -42,55 +43,67 @@ export class ClaimController {
 
     logger.trace({ claim }, 'Adding Claim')
 
-    await this.db.claimAdd(claim)
+    await this.db.addClaim(claim)
 
     logger.info({ claim }, 'Claim Added')
   }
 
-  private readonly storeNextClaimGetClaimErrorHandler = async (message: string) => {
+  private readonly handleStoreNextClaimGetClaimError = async (error: Error) => {
     throw new Error('No more claims')
   }
 
-  private readonly storeNextClaimGetClaim = async (): Promise<StoreNextClaimData> => {
-    const claim = await this.db.claimFindNext().catch(this.storeNextClaimGetClaimErrorHandler)
-
-    return setClaim(claim, {})
+  private readonly findNextClaim = async (): Promise<StoreNextClaimData> => {
+    try {
+      const claim = await this.db.findNextClaim()
+      return setClaim(claim, {})
+    } catch (error) {
+      await this.handleStoreNextClaimGetClaimError(error)
+    }
   }
 
   private readonly serializeClaim = async (claim: Claim) => JSON.stringify(claim)
 
-  private readonly storeClaim = pipeP(
+  private readonly uploadClaim = pipeP(
     this.serializeClaim,
     this.ipfs.addText
   )
 
-  private storeNextClaimStoreClaimErrorHandler = (claim: Claim) => async (error: Error) => {
-    await this.db.errorAdd({ claim, error })
-    throw new Error('')
+  private readonly handleStoreClaimError = async (error: Error, claim: Claim) => {
+    await this.db.addError({ claim, error })
+    throw new Error('Failed to store claim')
   }
 
-  private readonly storeNextClaimStoreClaim = async (data: StoreNextClaimData): Promise<StoreNextClaimData> => {
-    const ipfsFileHash = await this.storeClaim(getClaim(data)).catch(
-      this.storeNextClaimStoreClaimErrorHandler(getClaim(data))
-    )
-
-    return setIPFSFileHash(ipfsFileHash, data)
+  private readonly storeClaim = async (data: StoreNextClaimData): Promise<StoreNextClaimData> => {
+    const claim = getClaim(data)
+    try {
+      const ipfsFileHash = await this.uploadClaim(claim)
+      return setIPFSFileHash(ipfsFileHash, data)
+    } catch (error) {
+      await this.handleStoreClaimError(error, claim)
+    }
   }
 
-  private readonly storeNextClaimAddIPFSHashToClaim = async (data: StoreNextClaimData): Promise<StoreNextClaimData> => {
-    await this.db.claimAddHash(getClaim(data).id, getIPFSFileHash(data))
+  private readonly handleStoreNextClaimAddIPFSHashToClaimError = async (error: Error) => {
+    throw new Error('Failed to update claim hash')
+  }
 
-    return data
+  private readonly addIPFSHashToClaim = async (data: StoreNextClaimData): Promise<StoreNextClaimData> => {
+    try {
+      await this.db.addClaimHash(getClaimId(data), getIPFSFileHash(data))
+      return data
+    } catch (error) {
+      await this.handleStoreNextClaimAddIPFSHashToClaimError(error)
+    }
   }
 
   // tslint:disable-next-line
   public storeNextClaim = pipeP(
     this.log(LogTypes.trace)('Finding Claim'),
-    this.storeNextClaimGetClaim,
+    this.findNextClaim,
     this.log(LogTypes.trace)('Storing Claim'),
-    this.storeNextClaimStoreClaim,
+    this.storeClaim,
     this.log(LogTypes.trace)('Adding IPFS hash to Claim Entry'),
-    this.storeNextClaimAddIPFSHashToClaim,
+    this.addIPFSHashToClaim,
     this.log(LogTypes.trace)('Finished Storing Claim')
   )
 }

@@ -25,17 +25,19 @@ export class DatabaseMongo implements Database {
     await this.claims.createIndex({ claimId: 1 }, { unique: true })
   }
 
-  public readonly errorAdd = async () => {}
+  public readonly addError = async (error: object) => {
+    await this.errors.insertOne(error)
+  }
 
-  public readonly claimAdd = async (claim: Claim) => {
+  public readonly addClaim = async (claim: Claim) => {
     await this.claims.insertOne({ claimId: view(L.id, claim), claim, storageAttempts: 0, ipfsFileHash: null })
   }
 
-  public readonly claimAddHash = async (claimId: string, ipfsFileHash: string) => {
+  public readonly addClaimHash = async (claimId: string, ipfsFileHash: string) => {
     await this.claims.findOneAndUpdate({ claimId }, { $set: { ipfsFileHash } })
   }
 
-  public readonly claimFindNext = async () => {
+  public readonly findNextClaim = async () => {
     const response = await this.claims.findOneAndUpdate(
       { ipfsFileHash: null, storageAttempts: { $lt: MAX_STORAGE_ATTEMPTS } },
       {
