@@ -38,6 +38,7 @@ export class ClaimController {
     return value
   }
 
+  // tslint:disable-next-line
   public readonly addClaim = async (claim: Claim): Promise<void> => {
     const logger = this.logger.child({ method: 'addClaim' })
 
@@ -63,6 +64,7 @@ export class ClaimController {
 
   private readonly serializeClaim = async (claim: Claim) => JSON.stringify(claim)
 
+  // tslint:disable-next-line
   private readonly uploadClaim = pipeP(
     this.serializeClaim,
     this.ipfs.addText
