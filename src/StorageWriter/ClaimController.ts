@@ -49,7 +49,7 @@ export class ClaimController {
     logger.info({ claim }, 'Claim Added')
   }
 
-  private readonly handleStoreNextClaimGetClaimError = async (error: Error) => {
+  private readonly handleFindNextClaimError = async (error: Error) => {
     throw new Error('No more claims')
   }
 
@@ -58,7 +58,7 @@ export class ClaimController {
       const claim = await this.db.findNextClaim()
       return setClaim(claim, {})
     } catch (error) {
-      await this.handleStoreNextClaimGetClaimError(error)
+      await this.handleFindNextClaimError(error)
     }
   }
 
@@ -85,7 +85,7 @@ export class ClaimController {
     }
   }
 
-  private readonly handleStoreNextClaimAddIPFSHashToClaimError = async (error: Error) => {
+  private readonly handleAddIPFSHashToClaimError = async (error: Error) => {
     throw new Error('Failed to update claim hash')
   }
 
@@ -94,7 +94,7 @@ export class ClaimController {
       await this.db.addClaimHash(getClaimId(data), getIPFSFileHash(data))
       return data
     } catch (error) {
-      await this.handleStoreNextClaimAddIPFSHashToClaimError(error)
+      await this.handleAddIPFSHashToClaimError(error)
     }
   }
 
