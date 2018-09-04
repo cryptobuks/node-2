@@ -96,6 +96,7 @@ export class ClaimController {
     }
   }
 
+  // tslint:disable-next-line
   public storeNextClaim = pipeP(
     this.log(LogTypes.trace)('Finding Claim'),
     this.findNextClaim,
