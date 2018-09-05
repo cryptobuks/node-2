@@ -2,7 +2,9 @@ import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import { lensProp, view } from 'ramda'
+
 import { Database } from './Database'
+import * as claim from './Claim'
 
 const L = {
   id: lensProp('id'),
