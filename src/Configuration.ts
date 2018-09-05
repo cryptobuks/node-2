@@ -84,7 +84,7 @@ const defaultConfiguration: Configuration = {
   readDirectoryIntervalInSeconds: 30,
 
   uploadClaimIntervalInSeconds: 30,
-  
+
   forceBlockHeight: undefined,
   bitcoinAddress: undefined,
   bitcoinAddressPrivateKey: undefined,
