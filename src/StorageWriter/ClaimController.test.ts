@@ -1,8 +1,8 @@
-import { Messaging } from 'Messaging/Messaging'
 import { Db, Server } from 'mongodb'
 import * as Pino from 'pino'
 import { describe } from 'riteway'
 
+import { DatabaseMongo } from './DatabaseMongo'
 import { ClaimController } from './ClaimController'
 import { IPFS } from './IPFS'
 import { IPFSConfiguration } from './IPFSConfiguration'
@@ -20,8 +20,7 @@ describe('Storage ClaimController', async (should: any) => {
   {
     const claimController = new ClaimController(
       Pino(),
-      new Db('poet', server),
-      new Messaging(),
+      new DatabaseMongo(new Db('poet', server)),
       new IPFS(IPFSConfiguration),
     )
 
