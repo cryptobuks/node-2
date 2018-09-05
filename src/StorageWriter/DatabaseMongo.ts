@@ -1,12 +1,14 @@
 import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
-import { lensProp, view } from 'ramda'
+import { lensProp, view, compose } from 'ramda'
+
 import { Database } from './Database'
 
 const L = {
   id: lensProp('id'),
   value: lensProp('value'),
+  claim: lensProp('claim')
 }
 
 const MAX_STORAGE_ATTEMPTS = 20
@@ -34,17 +36,22 @@ export class DatabaseMongo implements Database {
   }
 
   public readonly addClaimHash = async (claimId: string, ipfsFileHash: string) => {
-    await this.claims.findOneAndUpdate({ claimId }, { $set: { ipfsFileHash } })
+    await this.claims.updateOne({ claimId }, { $set: { ipfsFileHash } })
   }
 
   public readonly findNextClaim = async () => {
     const response = await this.claims.findOneAndUpdate(
-      { ipfsFileHash: null, storageAttempts: { $lt: MAX_STORAGE_ATTEMPTS } },
+      { 
+        $and: [
+          {ipfsFileHash: null},
+          {storageAttempts: { $lt: MAX_STORAGE_ATTEMPTS }}
+        ]
+      },
       {
         $inc: { storageAttempts: 1 },
         $set: { lastStorageAttemptTime: new Date().getTime() },
       }
     )
-    return view(L.value, response)
+    return view(compose(L.value, L.claim), response)
   }
 }

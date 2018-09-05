@@ -5,6 +5,8 @@ import * as Pino from 'pino'
 import { createModuleLogger } from 'Helpers/Logging'
 import { Messaging } from 'Messaging/Messaging'
 
+import { Database } from './Database'
+import { DatabaseMongo } from './DatabaseMongo'
 import { ClaimController } from './ClaimController'
 import { IPFS } from './IPFS'
 import { IPFSConfiguration } from './IPFSConfiguration'
@@ -61,5 +63,6 @@ export class StorageWriter {
     this.container.bind<ServiceConfiguration>('ServiceConfiguration').toConstantValue({
       uploadClaimIntervalInSeconds: this.configuration.uploadClaimIntervalInSeconds,
     })
+    this.container.bind<Database>('Database').to(DatabaseMongo)
   }
 }

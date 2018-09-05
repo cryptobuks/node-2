@@ -27,8 +27,9 @@ export class ClaimController {
   private readonly db: Database
   private readonly ipfs: IPFS
 
-  constructor(@inject('Logger') logger: Pino.Logger, @inject('DB') db: Database, @inject('IPFS') ipfs: IPFS) {
+  constructor(@inject('Logger') logger: Pino.Logger, @inject('Database') db: Database, @inject('IPFS') ipfs: IPFS) {
     this.logger = childWithFileName(logger, __filename)
+    this.db = db
     this.ipfs = ipfs
   }
 
@@ -62,13 +63,8 @@ export class ClaimController {
     }
   }
 
-  private readonly serializeClaim = async (claim: Claim) => JSON.stringify(claim)
-
   // tslint:disable-next-line
-  private readonly uploadClaim = pipeP(
-    this.serializeClaim,
-    this.ipfs.addText
-  )
+  private readonly uploadClaim = (claim: Claim) => this.ipfs.addText(JSON.stringify(claim))
 
   private readonly handleStoreClaimError = async (error: Error, claim: Claim) => {
     await this.db.addError({ claim, error })
@@ -91,7 +87,7 @@ export class ClaimController {
 
   private readonly addIPFSHashToClaim = async (data: StoreNextClaimData): Promise<StoreNextClaimData> => {
     try {
-      await this.db.addClaimHash(getClaimId(data), getIPFSFileHash(data))
+      await this.db.addClaimHash(getId(getClaim(data)), getIPFSFileHash(data))
       return data
     } catch (error) {
       await this.handleAddIPFSHashToClaimError(error)
