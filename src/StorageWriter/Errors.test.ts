@@ -12,14 +12,14 @@ describe('uploadClaimError', async should => {
     assert({
       given: 'all arguments',
       should: 'return the correct object',
+      actual: uploadClaimError(message, claim),
       expected: {
         type: UPLOAD_CLAIM_ERROR,
         details: {
           message,
           claim,
         }
-      },
-      actual: uploadClaimError(message, claim)
+      }
     })
   }
 })
