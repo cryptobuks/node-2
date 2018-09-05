@@ -53,7 +53,7 @@ export class DatabaseMongo implements Database {
 
   private readonly handleNoClaimsFound = async (claim: Claim) => {
     if (isNil(claim)) throw new Error('No claims found')
-    return claim;
+    return claim
   }
 
   // tslint:disable-next-line

@@ -1,7 +1,7 @@
 import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import * as Pino from 'pino'
-import { pipeP, over, lensProp, lensPath, set, view } from 'ramda'
+import { pipeP, lensProp, lensPath, set, view } from 'ramda'
 
 import { childWithFileName } from 'Helpers/Logging'
 
