@@ -16,6 +16,6 @@ export const updateClaimHashError = (message: string, claim: Claim, hash: string
   details: {
     message,
     claim,
-    hash
+    hash,
   },
 })
