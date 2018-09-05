@@ -6,7 +6,7 @@ import { pipeP, lensProp, lensPath, set, view } from 'ramda'
 import { childWithFileName } from 'Helpers/Logging'
 
 import { Database } from './Database'
-import { uploadClaimError } from './Errors'
+import { uploadClaimError, updateClaimHashError } from './Errors'
 import { IPFS } from './IPFS'
 
 enum LogTypes {
@@ -85,7 +85,8 @@ export class ClaimController {
     }
   }
 
-  private readonly handleAddIPFSHashToClaimError = async (error: Error) => {
+  private readonly handleAddIPFSHashToClaimError = async (error: Error, claim: Claim, hash: string) => {
+    await this.db.addError(updateClaimHashError(error.message, claim, hash))
     throw new Error('Failed to update claim hash')
   }
 
@@ -94,7 +95,7 @@ export class ClaimController {
       await this.db.addClaimHash(view(L.claimId, data), view(L.ipfsFileHash, data))
       return data
     } catch (error) {
-      await this.handleAddIPFSHashToClaimError(error)
+      await this.handleAddIPFSHashToClaimError(error, view(L.claim, data), view(L.ipfsFileHash, data))
     }
   }
 
