@@ -7,6 +7,7 @@ import { childWithFileName } from 'Helpers/Logging'
 
 import { Database } from './Database'
 import { IPFS } from './IPFS'
+import { uploadClaimError } from './Errors'
 
 enum LogTypes {
   'info' = 'info',
@@ -71,7 +72,7 @@ export class ClaimController {
   private readonly uploadClaim = (claim: Claim) => this.ipfs.addText(JSON.stringify(claim))
 
   private readonly handleStoreClaimError = async (error: Error, claim: Claim) => {
-    await this.db.addError({ claim, error })
+    await this.db.addError(uploadClaimError(error.message, claim))
     throw new Error('Failed to store claim')
   }
 

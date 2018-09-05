@@ -10,7 +10,7 @@ const L = {
   valueClaim: lensPath(['value', 'claim']),
 }
 
-const MAX_STORAGE_ATTEMPTS = 20
+const MAX_STORAGE_ATTEMPTS = 10
 
 @injectable()
 export class DatabaseMongo implements Database {
