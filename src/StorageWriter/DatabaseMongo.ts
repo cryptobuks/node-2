@@ -1,7 +1,7 @@
 import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
-import { lensProp, lensPath, view } from 'ramda'
+import { lensProp, lensPath, view, isNil, pipeP } from 'ramda'
 
 import { Database } from './Database'
 
@@ -38,7 +38,7 @@ export class DatabaseMongo implements Database {
     await this.claims.updateOne({ claimId }, { $set: { ipfsFileHash } })
   }
 
-  public readonly findNextClaim = async () => {
+  private readonly findClaimToStore = async () => {
     const response = await this.claims.findOneAndUpdate(
       {
         $and: [{ ipfsFileHash: null }, { storageAttempts: { $lt: MAX_STORAGE_ATTEMPTS } }],
@@ -50,4 +50,12 @@ export class DatabaseMongo implements Database {
     )
     return view(L.valueClaim, response)
   }
+
+  private readonly handleNoClaimsFound = async (claim: Claim) => {
+    if (isNil(claim)) throw new Error('No claims found')
+    return claim;
+  }
+
+  // tslint:disable-next-line
+  public readonly findNextClaim = pipeP(this.findClaimToStore, this.handleNoClaimsFound)
 }

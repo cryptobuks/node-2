@@ -60,7 +60,8 @@ export class ClaimController {
 
   private readonly findNextClaim = async (): Promise<StoreNextClaimData> => {
     try {
-      return over(L.claim, this.db.findNextClaim, {})
+      const claim = await this.db.findNextClaim()
+      return set(L.claim, claim, {})
     } catch (error) {
       await this.handleFindNextClaimError(error)
     }
