@@ -6,8 +6,8 @@ import { pipeP, lensProp, lensPath, set, view } from 'ramda'
 import { childWithFileName } from 'Helpers/Logging'
 
 import { Database } from './Database'
-import { IPFS } from './IPFS'
 import { uploadClaimError } from './Errors'
+import { IPFS } from './IPFS'
 
 enum LogTypes {
   'info' = 'info',
@@ -68,7 +68,6 @@ export class ClaimController {
     }
   }
 
-  // tslint:disable-next-line
   private readonly uploadClaim = (claim: Claim) => this.ipfs.addText(JSON.stringify(claim))
 
   private readonly handleStoreClaimError = async (error: Error, claim: Claim) => {
