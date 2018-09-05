@@ -1,14 +1,13 @@
 import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
-import { lensProp, view } from 'ramda'
+import { lensProp, lensPath, view } from 'ramda'
 
 import { Database } from './Database'
 
 const L = {
   id: lensProp('id'),
-  value: lensProp('value'),
-  claim: lensProp('claim')
+  valueClaim: lensPath(['value', 'claim']),
 }
 
 const MAX_STORAGE_ATTEMPTS = 20
@@ -52,6 +51,6 @@ export class DatabaseMongo implements Database {
         $set: { lastStorageAttemptTime: new Date().getTime() },
       }
     )
-    return view(compose(L.value, L.claim), response)
+    return view((L.valueClaim), response)
   }
 }

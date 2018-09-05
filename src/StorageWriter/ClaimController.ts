@@ -1,18 +1,28 @@
 import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import * as Pino from 'pino'
-import { pipeP, over, set, view } from 'ramda'
+import { pipeP, over, lensProp, lensPath, set, view } from 'ramda'
 
 import { childWithFileName } from 'Helpers/Logging'
 
 import { Database } from './Database'
 import { IPFS } from './IPFS'
-import { StoreNextClaimData, L } from './StoreNextClaimData'
 
 enum LogTypes {
   'info' = 'info',
   'trace' = 'trace',
   'error' = 'error',
+}
+
+interface StoreNextClaimData {
+  claim: Claim
+  ipfsFileHash?: string
+}
+
+const L = {
+  claim: lensProp('claim'),
+  ipfsFileHash: lensProp('ipfsFileHash'),
+  claimId: lensPath(['claim', 'id'])
 }
 
 @injectable()
