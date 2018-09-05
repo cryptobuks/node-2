@@ -1,1 +1,1 @@
-export const isTruthy = (something: any): boolean => something
+export const isTruthy = (something: any): boolean => !!something
