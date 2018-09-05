@@ -22,7 +22,7 @@ interface StoreNextClaimData {
 const L = {
   claim: lensProp('claim'),
   ipfsFileHash: lensProp('ipfsFileHash'),
-  claimId: lensPath(['claim', 'id'])
+  claimId: lensPath(['claim', 'id']),
 }
 
 @injectable()

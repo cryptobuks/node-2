@@ -40,17 +40,14 @@ export class DatabaseMongo implements Database {
 
   public readonly findNextClaim = async () => {
     const response = await this.claims.findOneAndUpdate(
-      { 
-        $and: [
-          {ipfsFileHash: null},
-          {storageAttempts: { $lt: MAX_STORAGE_ATTEMPTS }}
-        ]
+      {
+        $and: [{ ipfsFileHash: null }, { storageAttempts: { $lt: MAX_STORAGE_ATTEMPTS } }],
       },
       {
         $inc: { storageAttempts: 1 },
         $set: { lastStorageAttemptTime: new Date().getTime() },
       }
     )
-    return view((L.valueClaim), response)
+    return view(L.valueClaim, response)
   }
 }
