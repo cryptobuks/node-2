@@ -1,12 +1,9 @@
 /* tslint:disable:no-relative-imports */
 import { ClaimType, createClaim } from '@po.et/poet-js'
-import { AsyncTest, Expect, SetupFixture, TestFixture, Timeout } from 'alsatian'
-import { promisify } from 'util'
+import { AsyncTest, Expect, SetupFixture, TestFixture } from 'alsatian'
 
 import { Key1 } from '../Keys'
 import { Client, waitForNode } from './Helper'
-
-const delay = promisify(setTimeout)
 
 @TestFixture('POST /works')
 export class PostWork {

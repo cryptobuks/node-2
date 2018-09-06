@@ -2,7 +2,7 @@ import { Claim } from '@po.et/poet-js'
 
 export enum ErrorTypes {
   UPLOAD_CLAIM_ERROR = 'UPLOAD_CLAIM_ERROR',
-  UPDATE_CLAIM_HASH_ERROR = 'UPDATE_CLAIM_HASH_ERROR'
+  UPDATE_CLAIM_HASH_ERROR = 'UPDATE_CLAIM_HASH_ERROR',
 }
 
 export const uploadClaimError = (message: string, claim: Claim) => ({

@@ -4,7 +4,6 @@ import { Collection, Db } from 'mongodb'
 import { lensProp, lensPath, view, isNil, pipeP } from 'ramda'
 
 import { Database } from './Database'
-import { config } from 'bluebird';
 
 const L = {
   id: lensProp('id'),
