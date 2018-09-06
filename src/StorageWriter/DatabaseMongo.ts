@@ -1,14 +1,9 @@
 import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
-import { lensProp, lensPath, view, isNil, pipeP } from 'ramda'
+import { view, isNil, pipeP } from 'ramda'
 
 import { Database } from './Database'
-
-const L = {
-  id: lensProp('id'),
-  valueClaim: lensPath(['value', 'claim']),
-}
 
 export interface DatabaseMongoConfiguration {
   maxStorageAttempts: number
@@ -43,7 +38,7 @@ export class DatabaseMongo implements Database {
   }
 
   private readonly findClaimToStore = async () => {
-    const response = await this.claims.findOneAndUpdate(
+    const { value = {}} = await this.claims.findOneAndUpdate(
       {
         $and: [{ ipfsFileHash: null }, { storageAttempts: { $lt: this.maxStorageAttempts } }],
       },
@@ -52,7 +47,8 @@ export class DatabaseMongo implements Database {
         $set: { lastStorageAttemptTime: new Date().getTime() },
       }
     )
-    return view(L.valueClaim, response)
+    const { claim } = value;
+    return claim
   }
 
   private readonly handleNoClaimsFound = async (claim: Claim) => {

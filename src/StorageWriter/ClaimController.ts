@@ -1,7 +1,7 @@
 import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
 import * as Pino from 'pino'
-import { pipeP, lensProp, lensPath, set, view } from 'ramda'
+import { pipeP } from 'ramda'
 
 import { childWithFileName } from 'Helpers/Logging'
 
@@ -18,12 +18,6 @@ enum LogTypes {
 interface StoreNextClaimData {
   claim: Claim
   ipfsFileHash?: string
-}
-
-const L = {
-  claim: lensProp('claim'),
-  ipfsFileHash: lensProp('ipfsFileHash'),
-  claimId: lensPath(['claim', 'id']),
 }
 
 @injectable()
@@ -62,7 +56,7 @@ export class ClaimController {
   private readonly findNextClaim = async (): Promise<StoreNextClaimData> => {
     try {
       const claim = await this.db.findNextClaim()
-      return set(L.claim, claim, {})
+      return { claim }
     } catch (error) {
       await this.handleFindNextClaimError(error)
     }
@@ -76,10 +70,13 @@ export class ClaimController {
   }
 
   private readonly storeClaim = async (data: StoreNextClaimData): Promise<StoreNextClaimData> => {
-    const claim = view(L.claim, data)
+    const { claim } = data
     try {
       const ipfsFileHash = await this.uploadClaim(claim)
-      return set(L.ipfsFileHash, ipfsFileHash, data)
+      return {
+        ...data,
+        ipfsFileHash
+      }
     } catch (error) {
       await this.handleStoreClaimError(error, claim)
     }
@@ -91,11 +88,12 @@ export class ClaimController {
   }
 
   private readonly addIPFSHashToClaim = async (data: StoreNextClaimData): Promise<StoreNextClaimData> => {
+    const { claim, ipfsFileHash } = data
     try {
-      await this.db.addClaimHash(view(L.claimId, data), view(L.ipfsFileHash, data))
+      await this.db.addClaimHash(claim.id, ipfsFileHash)
       return data
     } catch (error) {
-      await this.handleAddIPFSHashToClaimError(error, view(L.claim, data), view(L.ipfsFileHash, data))
+      await this.handleAddIPFSHashToClaimError(error, claim, ipfsFileHash)
     }
   }
 
