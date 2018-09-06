@@ -1,7 +1,7 @@
 import { describe } from 'riteway'
 import { Claim } from '@po.et/poet-js'
 
-import { UPLOAD_CLAIM_ERROR, UPDATE_CLAIM_HASH_ERROR, uploadClaimError, updateClaimHashError } from './Errors';
+import { ErrorTypes, uploadClaimError, updateClaimHashError } from './Errors';
 
 describe('uploadClaimError', async should => {
   const { assert } = should()
@@ -14,7 +14,7 @@ describe('uploadClaimError', async should => {
       should: 'return the correct object',
       actual: uploadClaimError(message, claim),
       expected: {
-        type: UPLOAD_CLAIM_ERROR,
+        type: ErrorTypes.UPLOAD_CLAIM_ERROR,
         details: {
           message,
           claim,
@@ -36,7 +36,7 @@ describe('updateClaimHashError', async should => {
       should: 'return the correct object',
       actual: updateClaimHashError(message, claim, hash),
       expected: {
-        type: UPDATE_CLAIM_HASH_ERROR,
+        type: ErrorTypes.UPDATE_CLAIM_HASH_ERROR,
         details: {
           message,
           claim,
