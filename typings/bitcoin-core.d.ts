@@ -15,6 +15,10 @@ declare module 'bitcoin-core' {
     getBalance(): any
     getBlock(hash: string, verbosity?: number): any
     getBlockHash(height: number): string
+    getNewAddress(): Promise<string>
+    createRawTransaction(inputs: any, outputs: any): Promise<string>
+    signRawTransaction(tx: any): Promise<any>
+    sendRawTransaction(tx: any): Promise<any>
   }
 
   export = BitcoinCore
