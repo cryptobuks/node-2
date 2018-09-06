@@ -90,29 +90,6 @@ export class PostWork {
   }
 
   @AsyncTest()
-  @Timeout(100 * 1000)
-  async gettingThePostedWorkShouldRetrieveIPFSHash() {
-    const delayTime = 90 * 1000
-    const claim = createClaim(Key1.privateKey, ClaimType.Work, {
-      name: 'Name',
-    })
-
-    await this.client.postWork(claim)
-
-    await waitForNode()
-
-    await delay(delayTime)
-
-    const response = await this.client.getWork(claim.id)
-    const body = await response.json()
-
-    Expect(body.timestamp).toBeDefined()
-    Expect(body.timestamp.ipfsFileHash).toBeDefined()
-    Expect(body.timestamp.ipfsFileHash.length).toBeDefined()
-    Expect(body.timestamp.ipfsFileHash.length).toBe(46)
-  }
-
-  @AsyncTest()
   async shouldFailIfSignatureIsIncorrect() {
     const claim = createClaim(Key1.privateKey, ClaimType.Work, {
       name: 'Name',
