@@ -38,7 +38,7 @@ export class DatabaseMongo implements Database {
   }
 
   private readonly findClaimToStore = async () => {
-    const { value = {} } = await this.claims.findOneAndUpdate(
+    const { value: { claim } } = await this.claims.findOneAndUpdate(
       {
         $and: [{ ipfsFileHash: null }, { storageAttempts: { $lt: this.maxStorageAttempts } }],
       },
@@ -47,7 +47,6 @@ export class DatabaseMongo implements Database {
         $set: { lastStorageAttemptTime: new Date().getTime() },
       }
     )
-    const { claim } = value
     return claim
   }
 
