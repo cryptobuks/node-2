@@ -1,13 +1,14 @@
-import { InsightClient } from '@po.et/poet-js'
-import * as bitcore from 'bitcore-lib'
+import BitcoinCore = require('bitcoin-core')
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import * as Pino from 'pino'
 
+import { UnspentOutput } from 'Helpers/Bitcoin'
 import { childWithFileName } from 'Helpers/Logging'
 import { Exchange } from 'Messaging/Messages'
 import { Messaging } from 'Messaging/Messaging'
 
+import { amountMinusFee, getData, getOutputs, selectBestUTXOs, unspentToInput } from './Bitcoin'
 import { ClaimControllerConfiguration } from './ClaimControllerConfiguration'
 
 @injectable()
@@ -16,23 +17,20 @@ export class ClaimController {
   private readonly db: Db
   private readonly collection: Collection
   private readonly messaging: Messaging
-  private readonly insightHelper: InsightClient
+  private readonly bitcoinCore: BitcoinCore
   private readonly configuration: ClaimControllerConfiguration
 
   constructor(
     @inject('Logger') logger: Pino.Logger,
     @inject('DB') db: Db,
     @inject('Messaging') messaging: Messaging,
-    @inject('InsightHelper') insightClient: InsightClient,
+    @inject('BitcoinCore') bitcoinCore: BitcoinCore,
     @inject('ClaimControllerConfiguration') configuration: ClaimControllerConfiguration
   ) {
-    if (!configuration.bitcoinAddress) throw new Error('configuration.bitcoinAddress is required.')
-    if (!configuration.bitcoinAddressPrivateKey) throw new Error('configuration.bitcoinAddressPrivateKey is required.')
-
     this.logger = childWithFileName(logger, __filename)
     this.db = db
     this.messaging = messaging
-    this.insightHelper = insightClient
+    this.bitcoinCore = bitcoinCore
     this.configuration = configuration
     this.collection = this.db.collection('blockchainWriter')
   }
@@ -74,64 +72,75 @@ export class ClaimController {
   }
 
   private async timestamp(ipfsDirectoryHash: string): Promise<void> {
+    const { bitcoinCore, configuration } = this
     const logger = this.logger.child({ method: 'timestamp' })
 
-    logger.trace({ ipfsDirectoryHash }, 'Timestamping IPFS Hash')
+    logger.debug({ ipfsDirectoryHash }, 'Anchoring IPFS Hash')
 
-    const utxo = await this.insightHelper.getUtxo(this.configuration.bitcoinAddress)
+    const utxo = (await bitcoinCore.listUnspent()) as ReadonlyArray<UnspentOutput>
 
-    if (!utxo || !utxo.length)
-      throw new Error(`Wallet seems to be empty. Check funds for ${this.configuration.bitcoinAddress}`)
-
-    // Use only up to 5 unused outputs to avoid large transactions,
-    // picking the ones with the most satoshis to ensure enough fee.
-    const topUtxo = utxo
-      .slice()
-      .sort((a, b) => b.satoshis - a.satoshis)
-      .slice(0, 5)
+    if (!utxo || !utxo.length) throw new Error(`Wallet seems to be empty.`)
 
     logger.trace(
       {
-        address: this.configuration.bitcoinAddress,
         utxo,
       },
-      'Got UTXO from Insight'
+      'Got UTXO from Bitcoin Core'
     )
 
-    const data = Buffer.concat([
-      Buffer.from(this.configuration.poetNetwork),
-      Buffer.from([...this.configuration.poetVersion]),
-      Buffer.from(ipfsDirectoryHash),
-    ])
-    const tx = new bitcore.Transaction()
-      .from(topUtxo)
-      .change(this.configuration.bitcoinAddress)
-      .addData(data)
-      .sign(this.configuration.bitcoinAddressPrivateKey)
+    const bestUtxo = selectBestUTXOs(utxo)
 
     logger.trace(
       {
-        address: this.configuration.bitcoinAddress,
-        txHash: tx.hash,
+        bestUtxo,
       },
-      'Transaction Built'
+      'Got best UTXO from Bitcoin Core'
     )
 
-    const txPostResponse = await this.insightHelper.broadcastTx(tx)
+    const newAddress = await bitcoinCore.getNewAddress()
 
-    logger.info(
+    logger.trace(
       {
-        txHash: tx.hash,
-        txId: tx.id,
-        txPostResponse,
+        newAddress,
       },
-      'Transaction Broadcasted'
+      'Got new address from Bitcoin Core'
     )
 
-    await this.collection.updateOne({ ipfsDirectoryHash }, { $set: { txId: tx.id } }, { upsert: true })
+    const data = getData(configuration.poetNetwork, configuration.poetVersion, ipfsDirectoryHash)
+    const inputs = bestUtxo.map(unspentToInput)
+    const outputs = getOutputs(data, newAddress, amountMinusFee(bestUtxo[0].amount))
+
+    const rawTx = await bitcoinCore.createRawTransaction(inputs, outputs)
+
+    logger.trace(
+      {
+        rawTx,
+      },
+      'Got rawTx from Bitcoin Core'
+    )
+
+    const tx = await bitcoinCore.signRawTransaction(rawTx)
+
+    logger.trace(
+      {
+        tx,
+      },
+      'Got signed tx from Bitcoin Core'
+    )
+
+    const txId = await bitcoinCore.sendRawTransaction(tx.hex)
+
+    logger.trace(
+      {
+        txId,
+      },
+      'Transaction broadcasted'
+    )
+
+    await this.collection.updateOne({ ipfsDirectoryHash }, { $set: { txId } }, { upsert: true })
     await this.messaging.publish(Exchange.IPFSHashTxId, {
       ipfsDirectoryHash,
-      txId: tx.id,
+      txId,
     })
   }
 }
