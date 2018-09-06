@@ -4,22 +4,27 @@ import { Collection, Db } from 'mongodb'
 import { lensProp, lensPath, view, isNil, pipeP } from 'ramda'
 
 import { Database } from './Database'
+import { config } from 'bluebird';
 
 const L = {
   id: lensProp('id'),
   valueClaim: lensPath(['value', 'claim']),
 }
 
-const MAX_STORAGE_ATTEMPTS = 10
+export interface DatabaseMongoConfiguration {
+  maxStorageAttempts: number
+}
 
 @injectable()
 export class DatabaseMongo implements Database {
   private readonly claims: Collection
   private readonly errors: Collection
+  private readonly maxStorageAttempts: number
 
-  constructor(@inject('DB') db: Db) {
+  constructor(@inject('DB') db: Db, @inject('IPFSConfiguration') configuration: DatabaseMongoConfiguration) {
     this.claims = db.collection('storageWriterClaims')
     this.errors = db.collection('storageWriterErrors')
+    this.maxStorageAttempts = configuration.maxStorageAttempts
   }
 
   public readonly start = async () => {
@@ -41,7 +46,7 @@ export class DatabaseMongo implements Database {
   private readonly findClaimToStore = async () => {
     const response = await this.claims.findOneAndUpdate(
       {
-        $and: [{ ipfsFileHash: null }, { storageAttempts: { $lt: MAX_STORAGE_ATTEMPTS } }],
+        $and: [{ ipfsFileHash: null }, { storageAttempts: { $lt: this.maxStorageAttempts } }],
       },
       {
         $inc: { storageAttempts: 1 },

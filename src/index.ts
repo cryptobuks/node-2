@@ -17,6 +17,7 @@ import { loadConfigurationWithDefaults } from 'Configuration'
 import { Storage } from 'Storage/Storage'
 import { StorageWriter } from 'StorageWriter/StorageWriter'
 import { View } from 'View/View'
+import { config } from 'bluebird';
 
 async function main() {
   console.log('Running Po.et Node')
@@ -114,6 +115,7 @@ async function main() {
     ipfsUrl: configuration.ipfsUrl,
     rabbitmqUrl: configuration.rabbitmqUrl,
     uploadClaimIntervalInSeconds: configuration.uploadClaimIntervalInSeconds,
+    maxStorageAttempts: configuration.uploadClaimMaxAttempts
   })
 
   try {

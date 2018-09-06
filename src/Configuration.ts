@@ -36,6 +36,7 @@ export interface Configuration extends LoggingConfiguration, BitcoinRPCConfigura
   readonly readDirectoryIntervalInSeconds: number
 
   readonly uploadClaimIntervalInSeconds: number
+  readonly uploadClaimMaxAttempts: number
 }
 
 export interface LoggingConfiguration {
@@ -84,6 +85,7 @@ const defaultConfiguration: Configuration = {
   readDirectoryIntervalInSeconds: 30,
 
   uploadClaimIntervalInSeconds: 30,
+  uploadClaimMaxAttempts: 10,
 
   forceBlockHeight: undefined,
   bitcoinAddress: undefined,
