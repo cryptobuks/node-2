@@ -1,6 +1,6 @@
 import { LoggingConfiguration } from 'Configuration'
 
-import { DatabaseMongoConfiguration } from './DatabaseMongo'
+import { DatabaseMongoConfiguration } from './DatabaseMongoConfiguration'
 import { IPFSConfiguration } from './IPFSConfiguration'
 import { ServiceConfiguration } from './ServiceConfiguration'
 

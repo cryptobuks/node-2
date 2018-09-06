@@ -4,10 +4,7 @@ import { Collection, Db } from 'mongodb'
 import { isNil, pipeP } from 'ramda'
 
 import { Database } from './Database'
-
-export interface DatabaseMongoConfiguration {
-  maxStorageAttempts: number
-}
+import { DatabaseMongoConfiguration } from './DatabaseMongoConfiguration'
 
 @injectable()
 export class DatabaseMongo implements Database {
