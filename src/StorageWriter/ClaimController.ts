@@ -75,7 +75,7 @@ export class ClaimController {
       const ipfsFileHash = await this.uploadClaim(claim)
       return {
         ...data,
-        ipfsFileHash
+        ipfsFileHash,
       }
     } catch (error) {
       await this.handleStoreClaimError(error, claim)
