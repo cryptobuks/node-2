@@ -2,15 +2,15 @@ import { describe } from 'riteway'
 import { Claim } from '@po.et/poet-js'
 import { FindAndModifyWriteOpResultObject } from 'mongodb';
 
-import { getValueClaim } from './DatabaseMongo';
+import { getValueClaimFromFindAndUpdateResponse } from './DatabaseMongo';
 
-describe('getValueClaim', async should => {
+describe('getValueClaimFromFindAndUpdateResponse', async should => {
   const { assert } = should('return the correct value')
   {
     const response: FindAndModifyWriteOpResultObject = {}
     assert({
       given: 'a response that does not contain a value',
-      actual: getValueClaim(response),
+      actual: getValueClaimFromFindAndUpdateResponse(response),
       expected: undefined
     })
   }
@@ -18,7 +18,7 @@ describe('getValueClaim', async should => {
     const response: FindAndModifyWriteOpResultObject = { value: {} }
     assert({
       given: 'a response that does not contain a claim',
-      actual: getValueClaim(response),
+      actual: getValueClaimFromFindAndUpdateResponse(response),
       expected: undefined
     })
   }
@@ -29,7 +29,7 @@ describe('getValueClaim', async should => {
     } }
     assert({
       given: 'a response that contians a claim',
-      actual: getValueClaim(response),
+      actual: getValueClaimFromFindAndUpdateResponse(response),
       expected: claim
     })
   }

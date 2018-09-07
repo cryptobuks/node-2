@@ -10,9 +10,10 @@ const L = {
   valueClaim: lensPath(['value', 'claim']),
 }
 
-export const getValueClaim = (response: FindAndModifyWriteOpResultObject): Claim => view(L.valueClaim, response)
+export const getValueClaimFromFindAndUpdateResponse = (response: FindAndModifyWriteOpResultObject): Claim =>
+  view(L.valueClaim, response)
 
-@injectable()
+@injectable()``
 export class DatabaseMongo implements Database {
   private readonly claims: Collection
   private readonly errors: Collection
@@ -57,5 +58,5 @@ export class DatabaseMongo implements Database {
   }
 
   // tslint:disable-next-line
-  public readonly findNextClaim = pipeP(this.findClaimToStore, getValueClaim, this.handleNoClaimsFound)
+  public readonly findNextClaim = pipeP(this.findClaimToStore, getValueClaimFromFindAndUpdateResponse, this.handleNoClaimsFound)
 }
