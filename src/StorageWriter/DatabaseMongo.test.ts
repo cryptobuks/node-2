@@ -2,7 +2,7 @@ import { describe, Try } from 'riteway'
 import { Claim } from '@po.et/poet-js'
 import { FindAndModifyWriteOpResultObject } from 'mongodb';
 
-import { getClaimFromFindAndUpdateResponse, throwIfNoClaimFound } from './DatabaseMongo';
+import { getClaimFromFindAndUpdateResponse, throwIfClaimNotFound } from './DatabaseMongo';
 
 describe('getClaimFromFindAndUpdateResponse', async should => {
   const { assert } = should('return the correct value')
@@ -35,27 +35,27 @@ describe('getClaimFromFindAndUpdateResponse', async should => {
   }
 })
 
-describe('throwIfNoClaimFound', async should => {
+describe('throwIfClaimNotFound', async should => {
   const { assert } = should()
 
   assert({
     given: 'no args',
     should: 'throw',
-    actual: Try(throwIfNoClaimFound),
+    actual: Try(throwIfClaimNotFound),
     expected: new Error()
   })
 
   assert({
     given: 'null',
     should: 'throw',
-    actual: Try(throwIfNoClaimFound, null),
+    actual: Try(throwIfClaimNotFound, null),
     expected: new Error()
   })
 
   assert({
     given: 'undefined',
     should: 'throw',
-    actual: Try(throwIfNoClaimFound, undefined),
+    actual: Try(throwIfClaimNotFound, undefined),
     expected: new Error()
   })
 
@@ -64,7 +64,7 @@ describe('throwIfNoClaimFound', async should => {
     assert({
       given: 'a claim',
       should: 'return the claim',
-      actual: throwIfNoClaimFound(claim),
+      actual: throwIfClaimNotFound(claim),
       expected: claim
     })
   }

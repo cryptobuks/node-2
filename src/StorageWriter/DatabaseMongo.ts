@@ -13,7 +13,7 @@ const L = {
 export const getClaimFromFindAndUpdateResponse = (response: FindAndModifyWriteOpResultObject): Claim | undefined =>
   view(L.valueClaim, response)
 
-export const throwIfNoClaimFound = (claim: Claim): Claim => {
+export const throwIfClaimNotFound = (claim: Claim): Claim => {
   if (isNil(claim)) throw new Error('No claims found')
   return claim
 }
@@ -61,6 +61,6 @@ export class DatabaseMongo implements Database {
   public readonly findNextClaim = pipeP(
     this.findClaimToStore,
     getClaimFromFindAndUpdateResponse,
-    throwIfNoClaimFound
+    throwIfClaimNotFound
   )
 }
