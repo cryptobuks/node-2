@@ -24,7 +24,7 @@ export class DatabaseMongo implements Database {
   private readonly errors: Collection
   private readonly maxStorageAttempts: number
 
-  constructor(@inject('DB') db: Db, @inject('IPFSConfiguration') configuration: DatabaseMongoConfiguration) {
+  constructor(@inject('DB') db: Db, @inject('DatabaseMongoConfiguration') configuration: DatabaseMongoConfiguration) {
     this.claims = db.collection('storageWriterClaims')
     this.errors = db.collection('storageWriterErrors')
     this.maxStorageAttempts = configuration.maxStorageAttempts

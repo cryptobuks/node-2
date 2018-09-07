@@ -1,3 +1,3 @@
 export interface DatabaseMongoConfiguration {
-  maxStorageAttempts: number
+  readonly maxStorageAttempts: number
 }
