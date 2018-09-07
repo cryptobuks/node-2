@@ -10,7 +10,7 @@ const L = {
   valueClaim: lensPath(['value', 'claim']),
 }
 
-export const getClaimFromFindAndUpdateResponse = (response: FindAndModifyWriteOpResultObject): Claim =>
+export const getClaimFromFindAndUpdateResponse = (response: FindAndModifyWriteOpResultObject): Claim | undefined =>
   view(L.valueClaim, response)
 
 @injectable()``
