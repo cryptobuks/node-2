@@ -10,7 +10,7 @@ const L = {
   valueClaim: lensPath(['value', 'claim']),
 }
 
-export const getValueClaimFromFindAndUpdateResponse = (response: FindAndModifyWriteOpResultObject): Claim =>
+export const getClaimFromFindAndUpdateResponse = (response: FindAndModifyWriteOpResultObject): Claim =>
   view(L.valueClaim, response)
 
 @injectable()``
@@ -58,5 +58,9 @@ export class DatabaseMongo implements Database {
   }
 
   // tslint:disable-next-line
-  public readonly findNextClaim = pipeP(this.findClaimToStore, getValueClaimFromFindAndUpdateResponse, this.handleNoClaimsFound)
+  public readonly findNextClaim = pipeP(
+    this.findClaimToStore,
+    getClaimFromFindAndUpdateResponse,
+    this.handleNoClaimsFound
+  )
 }
