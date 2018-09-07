@@ -1,3 +1,5 @@
+import { pipe, sum } from 'ramda'
+
 import { UnspentOutput } from 'Helpers/Bitcoin'
 
 export const unspentToInput = ({ txid, vout }: any) => ({ txid, vout })
@@ -20,3 +22,8 @@ export const selectBestUTXOs = (unspentTransactionOutputs: ReadonlyArray<Unspent
   unspentTransactionOutputs.slice(0, 1)
 
 export const amountMinusFee = (amount: number) => (amount * 1000 - 1) / 1000
+
+export const calculateChange = (unspentTransactionOutputs: ReadonlyArray<UnspentOutput>, fee: number) =>
+  sum(unspentTransactionOutputs.map(_ => _.amount))
+
+export const calculateFee = (something: any, feerate: number) => feerate

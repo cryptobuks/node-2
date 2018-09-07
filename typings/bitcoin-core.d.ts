@@ -19,6 +19,12 @@ declare module 'bitcoin-core' {
     createRawTransaction(inputs: any, outputs: any): Promise<string>
     signRawTransaction(tx: any): Promise<any>
     sendRawTransaction(tx: any): Promise<any>
+    estimateSmartFee(blocks: number): Promise<EstimateSmartFeeResponse>
+  }
+
+  interface EstimateSmartFeeResponse {
+    readonly feerate: number
+    readonly blocks: number
   }
 
   export = BitcoinCore

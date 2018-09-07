@@ -8,7 +8,15 @@ import { childWithFileName } from 'Helpers/Logging'
 import { Exchange } from 'Messaging/Messages'
 import { Messaging } from 'Messaging/Messaging'
 
-import { amountMinusFee, getData, getOutputs, selectBestUTXOs, unspentToInput } from './Bitcoin'
+import {
+  amountMinusFee,
+  calculateChange,
+  calculateFee,
+  getData,
+  getOutputs,
+  selectBestUTXOs,
+  unspentToInput
+} from './Bitcoin'
 import { ClaimControllerConfiguration } from './ClaimControllerConfiguration'
 
 @injectable()
@@ -74,6 +82,7 @@ export class ClaimController {
   private async timestamp(ipfsDirectoryHash: string): Promise<void> {
     const { bitcoinCore, configuration } = this
     const logger = this.logger.child({ method: 'timestamp' })
+    const data = getData(configuration.poetNetwork, configuration.poetVersion, ipfsDirectoryHash)
 
     logger.debug({ ipfsDirectoryHash }, 'Anchoring IPFS Hash')
 
@@ -97,18 +106,30 @@ export class ClaimController {
       'Got best UTXO from Bitcoin Core'
     )
 
-    const newAddress = await bitcoinCore.getNewAddress()
+    const feePerKilobyte = await bitcoinCore.estimateSmartFee(2)
 
     logger.trace(
       {
-        newAddress,
+        feePerKilobyte,
+      },
+      'Got estimated feePerKilobyte from Bitcoin Core'
+    )
+
+    const changeAddress = await bitcoinCore.getNewAddress()
+
+    logger.trace(
+      {
+        changeAddress,
       },
       'Got new address from Bitcoin Core'
     )
 
-    const data = getData(configuration.poetNetwork, configuration.poetVersion, ipfsDirectoryHash)
+    const fee = calculateFee(false, feePerKilobyte.feerate)
+
+    const change = calculateChange(bestUtxo, fee)
+
     const inputs = bestUtxo.map(unspentToInput)
-    const outputs = getOutputs(data, newAddress, amountMinusFee(bestUtxo[0].amount))
+    const outputs = getOutputs(data, changeAddress, change)
 
     const rawTx = await bitcoinCore.createRawTransaction(inputs, outputs)
 

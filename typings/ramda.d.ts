@@ -1,1 +1,3 @@
-declare module 'ramda'
+declare module 'ramda' {
+
+}
