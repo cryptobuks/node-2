@@ -70,7 +70,7 @@ export class StorageWriter {
     })
     this.container.bind<Database>('Database').to(DatabaseMongo)
     this.container.bind<DatabaseMongoConfiguration>('DatabaseMongoConfiguration').toConstantValue({
-      maxStorageAttempts: this.configuration.maxStorageAttempts
+      maxStorageAttempts: this.configuration.maxStorageAttempts,
     })
   }
 }
