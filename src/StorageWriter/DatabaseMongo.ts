@@ -1,10 +1,16 @@
 import { Claim } from '@po.et/poet-js'
 import { inject, injectable } from 'inversify'
-import { Collection, Db } from 'mongodb'
-import { isNil, pipeP } from 'ramda'
+import { Collection, Db, FindAndModifyWriteOpResultObject } from 'mongodb'
+import { isNil, pipeP, lensPath, view } from 'ramda'
 
 import { Database } from './Database'
 import { DatabaseMongoConfiguration } from './DatabaseMongoConfiguration'
+
+const L = {
+  valueClaim: lensPath(['value', 'claim'])
+}
+
+export const getValueClaim = (response: FindAndModifyWriteOpResultObject): Claim => view(L.valueClaim, response)
 
 @injectable()
 export class DatabaseMongo implements Database {
@@ -34,10 +40,8 @@ export class DatabaseMongo implements Database {
     await this.claims.updateOne({ claimId }, { $set: { ipfsFileHash } })
   }
 
-  private readonly findClaimToStore = async () => {
-    const {
-      value: { claim },
-    } = await this.claims.findOneAndUpdate(
+  private readonly findClaimToStore = () =>
+    this.claims.findOneAndUpdate(
       {
         $and: [{ ipfsFileHash: null }, { storageAttempts: { $lt: this.maxStorageAttempts } }],
       },
@@ -46,14 +50,12 @@ export class DatabaseMongo implements Database {
         $set: { lastStorageAttemptTime: new Date().getTime() },
       }
     )
-    return claim
-  }
-
+    
   private readonly handleNoClaimsFound = async (claim: Claim) => {
     if (isNil(claim)) throw new Error('No claims found')
     return claim
   }
 
   // tslint:disable-next-line
-  public readonly findNextClaim = pipeP(this.findClaimToStore, this.handleNoClaimsFound)
+  public readonly findNextClaim = pipeP(this.findClaimToStore, getValueClaim, this.handleNoClaimsFound)
 }
