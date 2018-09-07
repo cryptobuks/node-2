@@ -7,6 +7,14 @@ import { getValueClaim } from './DatabaseMongo';
 describe('getValueClaim', async should => {
   const { assert } = should('return the correct value')
   {
+    const response: FindAndModifyWriteOpResultObject = {}
+    assert({
+      given: 'a response that does not contain a value',
+      actual: getValueClaim(response),
+      expected: undefined
+    })
+  }
+  {
     const response: FindAndModifyWriteOpResultObject = { value: {} }
     assert({
       given: 'a response that does not contain a claim',
