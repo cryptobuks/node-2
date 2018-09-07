@@ -49,17 +49,9 @@ export class ClaimController {
     logger.info({ claim }, 'Claim Added')
   }
 
-  private readonly handleFindNextClaimError = async (error: Error) => {
-    throw new Error('No more claims')
-  }
-
   private readonly findNextClaim = async (): Promise<StoreNextClaimData> => {
-    try {
-      const claim = await this.db.findNextClaim()
-      return { claim }
-    } catch (error) {
-      await this.handleFindNextClaimError(error)
-    }
+    const claim = await this.db.findNextClaim()
+    return { claim }
   }
 
   private readonly uploadClaim = (claim: Claim) => this.ipfs.addText(JSON.stringify(claim))

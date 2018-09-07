@@ -24,6 +24,7 @@ export class StorageWriter {
   private router: Router
   private messaging: Messaging
   private service: Service
+  private database: Database
 
   constructor(configuration: StorageWriterConfiguration) {
     this.configuration = configuration
@@ -45,6 +46,9 @@ export class StorageWriter {
 
     this.service = this.container.get('Service')
     await this.service.start()
+
+    this.database = this.container.get('Database')
+    await this.database.start()
 
     this.logger.info('StorageWriter Started')
   }
