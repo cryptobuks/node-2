@@ -39,13 +39,6 @@ describe('throwIfClaimNotFound', async should => {
   const { assert } = should()
 
   assert({
-    given: 'no args',
-    should: 'throw',
-    actual: Try(throwIfClaimNotFound),
-    expected: new Error()
-  })
-
-  assert({
     given: 'null',
     should: 'throw',
     actual: Try(throwIfClaimNotFound, null),
