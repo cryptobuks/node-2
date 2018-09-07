@@ -7,7 +7,7 @@ import { Database } from './Database'
 import { DatabaseMongoConfiguration } from './DatabaseMongoConfiguration'
 
 const L = {
-  valueClaim: lensPath(['value', 'claim'])
+  valueClaim: lensPath(['value', 'claim']),
 }
 
 export const getValueClaim = (response: FindAndModifyWriteOpResultObject): Claim => view(L.valueClaim, response)
@@ -50,7 +50,7 @@ export class DatabaseMongo implements Database {
         $set: { lastStorageAttemptTime: new Date().getTime() },
       }
     )
-    
+
   private readonly handleNoClaimsFound = async (claim: Claim) => {
     if (isNil(claim)) throw new Error('No claims found')
     return claim
