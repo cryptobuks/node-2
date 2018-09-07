@@ -13,7 +13,12 @@ const L = {
 export const getClaimFromFindAndUpdateResponse = (response: FindAndModifyWriteOpResultObject): Claim | undefined =>
   view(L.valueClaim, response)
 
-@injectable()``
+export const throwIfNoClaimFound = (claim: Claim): Claim => {
+  if (isNil(claim)) throw new Error('No claims found')
+  return claim
+}
+
+@injectable()
 export class DatabaseMongo implements Database {
   private readonly claims: Collection
   private readonly errors: Collection
@@ -52,15 +57,10 @@ export class DatabaseMongo implements Database {
       }
     )
 
-  private readonly handleNoClaimsFound = async (claim: Claim) => {
-    if (isNil(claim)) throw new Error('No claims found')
-    return claim
-  }
-
   // tslint:disable-next-line
   public readonly findNextClaim = pipeP(
     this.findClaimToStore,
     getClaimFromFindAndUpdateResponse,
-    this.handleNoClaimsFound
+    throwIfNoClaimFound
   )
 }
