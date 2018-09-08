@@ -2,6 +2,7 @@ import BitcoinCore = require('bitcoin-core')
 import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import * as Pino from 'pino'
+import { pipeP, view, lensProp } from 'ramda'
 
 import { childWithFileName } from 'Helpers/Logging'
 import { Exchange } from 'Messaging/Messages'
@@ -9,6 +10,7 @@ import { Messaging } from 'Messaging/Messaging'
 
 import { getData } from './Bitcoin'
 import { ClaimControllerConfiguration } from './ClaimControllerConfiguration'
+import { anchorData } from './anchorData'
 
 @injectable()
 export class ClaimController {
@@ -18,6 +20,8 @@ export class ClaimController {
   private readonly messaging: Messaging
   private readonly bitcoinCore: BitcoinCore
   private readonly configuration: ClaimControllerConfiguration
+  private readonly anchorData: (data: string) => Promise<string>
+  private readonly ipfsDirectoryHashToBitcoinData: any
 
   constructor(
     @inject('Logger') logger: Pino.Logger,
@@ -32,6 +36,8 @@ export class ClaimController {
     this.bitcoinCore = bitcoinCore
     this.configuration = configuration
     this.collection = this.db.collection('blockchainWriter')
+    this.anchorData = anchorData(bitcoinCore)
+    this.ipfsDirectoryHashToBitcoinData = getData(configuration.poetNetwork, configuration.poetVersion)
   }
 
   async requestTimestamp(ipfsDirectoryHash: string): Promise<void> {
@@ -46,7 +52,7 @@ export class ClaimController {
   }
 
   async anchorNextIPFSDirectoryHash() {
-    const logger = this.logger.child({ method: 'anchorNextHash' })
+    const logger = this.logger.child({ method: this.anchorNextIPFSDirectoryHash.name })
 
     logger.trace('Retrieving Next Hash To Anchor')
 
@@ -71,12 +77,10 @@ export class ClaimController {
   }
 
   private async anchorIPFSDirectoryHash(ipfsDirectoryHash: string): Promise<void> {
-    const { configuration, collection, messaging, anchorData } = this
+    const { collection, messaging, anchorData, ipfsDirectoryHashToBitcoinData } = this
     const logger = this.logger.child({ method: 'anchorIPFSDirectoryHash' })
 
     logger.debug({ ipfsDirectoryHash }, 'Anchoring IPFS Hash')
-
-    const ipfsDirectoryHashToBitcoinData = getData(configuration.poetNetwork, configuration.poetVersion)
 
     const data = ipfsDirectoryHashToBitcoinData(ipfsDirectoryHash)
     const txId = await anchorData(data)
@@ -88,46 +92,41 @@ export class ClaimController {
     })
   }
 
-  private anchorData = async (data: string) => {
-    const { bitcoinCore } = this
-    const logger = this.logger.child({ method: 'anchorData' })
-
-    const rawTransaction = await bitcoinCore.createRawTransaction([], { data })
-
-    logger.trace(
-      {
-        rawTransaction,
-      },
-      'Got rawTransaction from Bitcoin Core'
-    )
-
-    const fundedTransaction = await bitcoinCore.fundRawTransaction(rawTransaction)
-
-    logger.trace(
-      {
-        fundedTransaction,
-      },
-      'Got fundedTransaction from Bitcoin Core'
-    )
-
-    const signedTransaction = await bitcoinCore.signRawTransaction(fundedTransaction.hex)
-
-    logger.trace(
-      {
-        signedTransaction,
-      },
-      'Got signedTransaction from Bitcoin Core'
-    )
-
-    const sentTransaction = await bitcoinCore.sendRawTransaction(signedTransaction.hex)
-
-    logger.trace(
-      {
-        sentTransaction,
-      },
-      'Got sentTransaction from Bitcoin Core'
-    )
-
-    return sentTransaction
-  }
+  // private anchorData = async (data: string) => {
+  //   const { bitcoinCore, logger: parentLogger } = this
+  //   const logger = parentLogger.child({ method: 'anchorData' })
+  //
+  //   // logger.debug({ data }, 'Anchoring data')
+  //
+  //   const trace = (message: string) => async <T extends object>(object: T) => {
+  //     logger.trace(object, message)
+  //     return object
+  //   }
+  //
+  //   const debug = (message: string) => async <T extends object>(object: T) => {
+  //     logger.trace(object, message)
+  //     return object
+  //   }
+  //
+  //   const traceGotFromBitcoinCore = (what: string) => trace(`Got ${what} from Bitcoin Core`)
+  //
+  //   const viewHex = view(lensProp('hex'))
+  //
+  //   const dataToOutput = async (data: string) => ({ data })
+  //
+  //   return pipeP(
+  //     debug('Anchoring data'),
+  //     dataToOutput,
+  //     bitcoinCore.createRawTransaction.bind(this.bitcoinCore, []),
+  //     traceGotFromBitcoinCore('raw transaction'),
+  //     bitcoinCore.fundRawTransaction.bind(bitcoinCore),
+  //     traceGotFromBitcoinCore('funded transaction'),
+  //     viewHex,
+  //     bitcoinCore.signRawTransaction.bind(bitcoinCore),
+  //     traceGotFromBitcoinCore('signed raw transaction'),
+  //     viewHex,
+  //     bitcoinCore.sendRawTransaction.bind(bitcoinCore),
+  //     traceGotFromBitcoinCore('sent raw transaction')
+  //   )(data)
+  // }
 }
