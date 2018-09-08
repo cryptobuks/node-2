@@ -53,8 +53,8 @@ const defaultConfiguration: Configuration = {
   mongodbUrl: 'mongodb://localhost:27017/poet',
   ipfsUrl: 'http://localhost:5001',
   bitcoinUrl: '127.0.0.1',
-  bitcoinPort: 18332,
-  bitcoinNetwork: 'testnet',
+  bitcoinPort: 18443,
+  bitcoinNetwork: 'regtest',
   bitcoinUsername: 'bitcoinrpcuser',
   bitcoinPassword: 'bitcoinrpcpassword',
 
