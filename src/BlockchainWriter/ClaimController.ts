@@ -3,20 +3,11 @@ import { inject, injectable } from 'inversify'
 import { Collection, Db } from 'mongodb'
 import * as Pino from 'pino'
 
-import { UnspentOutput } from 'Helpers/Bitcoin'
 import { childWithFileName } from 'Helpers/Logging'
 import { Exchange } from 'Messaging/Messages'
 import { Messaging } from 'Messaging/Messaging'
 
-import {
-  amountMinusFee,
-  calculateChange,
-  calculateFee,
-  getData,
-  getOutputs,
-  selectBestUTXOs,
-  unspentToInput
-} from './Bitcoin'
+import { getData } from './Bitcoin'
 import { ClaimControllerConfiguration } from './ClaimControllerConfiguration'
 
 @injectable()
@@ -44,7 +35,7 @@ export class ClaimController {
   }
 
   async requestTimestamp(ipfsDirectoryHash: string): Promise<void> {
-    this.logger.trace({
+    this.logger.debug({
       method: 'timestampWithRetry',
       ipfsDirectoryHash,
     })
@@ -54,114 +45,89 @@ export class ClaimController {
     })
   }
 
-  async timestampNextHash() {
-    const logger = this.logger.child({ method: 'timestampNextHash' })
+  async anchorNextIPFSDirectoryHash() {
+    const logger = this.logger.child({ method: 'anchorNextHash' })
 
-    logger.trace('Retrieving Next Hash To Timestamp')
+    logger.trace('Retrieving Next Hash To Anchor')
 
     const entry = await this.collection.findOne({ txId: null })
     const ipfsDirectoryHash = entry && entry.ipfsDirectoryHash
 
-    this.logger.trace({ ipfsDirectoryHash }, 'Next Hash To Timestamp Retrieved')
+    this.logger.trace({ ipfsDirectoryHash }, 'Next IPFS Directory Hash To Anchor Retrieved')
 
     if (!ipfsDirectoryHash) return
 
     try {
-      await this.timestamp(ipfsDirectoryHash)
+      await this.anchorIPFSDirectoryHash(ipfsDirectoryHash)
     } catch (exception) {
       logger.warn(
         {
           ipfsDirectoryHash,
           exception,
         },
-        'Uncaught Exception While Timestamping Hash'
+        'Unexpected Exception While Anchoring IPFS Directory Hash'
       )
     }
   }
 
-  private async timestamp(ipfsDirectoryHash: string): Promise<void> {
-    const { bitcoinCore, configuration } = this
-    const logger = this.logger.child({ method: 'timestamp' })
-    const data = getData(configuration.poetNetwork, configuration.poetVersion, ipfsDirectoryHash)
+  private async anchorIPFSDirectoryHash(ipfsDirectoryHash: string): Promise<void> {
+    const { configuration, collection, messaging, anchorData } = this
+    const logger = this.logger.child({ method: 'anchorIPFSDirectoryHash' })
 
     logger.debug({ ipfsDirectoryHash }, 'Anchoring IPFS Hash')
 
-    const utxo = (await bitcoinCore.listUnspent()) as ReadonlyArray<UnspentOutput>
+    const ipfsDirectoryHashToBitcoinData = getData(configuration.poetNetwork, configuration.poetVersion)
 
-    if (!utxo || !utxo.length) throw new Error(`Wallet seems to be empty.`)
+    const data = ipfsDirectoryHashToBitcoinData(ipfsDirectoryHash)
+    const txId = await anchorData(data)
 
-    logger.trace(
-      {
-        utxo,
-      },
-      'Got UTXO from Bitcoin Core'
-    )
-
-    const bestUtxo = selectBestUTXOs(utxo)
-
-    logger.trace(
-      {
-        bestUtxo,
-      },
-      'Got best UTXO from Bitcoin Core'
-    )
-
-    const feePerKilobyte = await bitcoinCore.estimateSmartFee(2)
-
-    logger.trace(
-      {
-        feePerKilobyte,
-      },
-      'Got estimated feePerKilobyte from Bitcoin Core'
-    )
-
-    const changeAddress = await bitcoinCore.getNewAddress()
-
-    logger.trace(
-      {
-        changeAddress,
-      },
-      'Got new address from Bitcoin Core'
-    )
-
-    const fee = calculateFee(false, feePerKilobyte.feerate)
-
-    const change = calculateChange(bestUtxo, fee)
-
-    const inputs = bestUtxo.map(unspentToInput)
-    const outputs = getOutputs(data, changeAddress, change)
-
-    const rawTx = await bitcoinCore.createRawTransaction(inputs, outputs)
-
-    logger.trace(
-      {
-        rawTx,
-      },
-      'Got rawTx from Bitcoin Core'
-    )
-
-    const tx = await bitcoinCore.signRawTransaction(rawTx)
-
-    logger.trace(
-      {
-        tx,
-      },
-      'Got signed tx from Bitcoin Core'
-    )
-
-    const txId = await bitcoinCore.sendRawTransaction(tx.hex)
-
-    logger.trace(
-      {
-        txId,
-      },
-      'Transaction broadcasted'
-    )
-
-    await this.collection.updateOne({ ipfsDirectoryHash }, { $set: { txId } }, { upsert: true })
-    await this.messaging.publish(Exchange.IPFSHashTxId, {
+    await collection.updateOne({ ipfsDirectoryHash }, { $set: { txId } }, { upsert: true })
+    await messaging.publish(Exchange.IPFSHashTxId, {
       ipfsDirectoryHash,
       txId,
     })
+  }
+
+  private anchorData = async (data: string) => {
+    const { bitcoinCore } = this
+    const logger = this.logger.child({ method: 'anchorData' })
+
+    const rawTransaction = await bitcoinCore.createRawTransaction([], { data })
+
+    logger.trace(
+      {
+        rawTransaction,
+      },
+      'Got rawTransaction from Bitcoin Core'
+    )
+
+    const fundedTransaction = await bitcoinCore.fundRawTransaction(rawTransaction)
+
+    logger.trace(
+      {
+        fundedTransaction,
+      },
+      'Got fundedTransaction from Bitcoin Core'
+    )
+
+    const signedTransaction = await bitcoinCore.signRawTransaction(fundedTransaction.hex)
+
+    logger.trace(
+      {
+        signedTransaction,
+      },
+      'Got signedTransaction from Bitcoin Core'
+    )
+
+    const sentTransaction = await bitcoinCore.sendRawTransaction(signedTransaction.hex)
+
+    logger.trace(
+      {
+        sentTransaction,
+      },
+      'Got sentTransaction from Bitcoin Core'
+    )
+
+    return sentTransaction
   }
 }
