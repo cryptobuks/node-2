@@ -12,18 +12,17 @@ export interface Configuration extends LoggingConfiguration, BitcoinRPCConfigura
   readonly rabbitmqUrl: string
   readonly mongodbUrl: string
   readonly ipfsUrl: string
-  readonly insightUrl: string
 
   readonly apiPort: number
+
   readonly poetNetwork: string
   readonly poetVersion: ReadonlyArray<number>
-  readonly minimumBlockHeight: number
+
   readonly blockchainReaderIntervalInSeconds: number
+  readonly minimumBlockHeight: number
   readonly forceBlockHeight?: number
 
   readonly enableTimestamping: boolean
-  readonly bitcoinAddress: string
-  readonly bitcoinAddressPrivateKey: string
   readonly timestampIntervalInSeconds: number
 
   readonly downloadIntervalInSeconds: number
@@ -56,10 +55,9 @@ const defaultConfiguration: Configuration = {
   rabbitmqUrl: 'amqp://localhost',
   mongodbUrl: 'mongodb://localhost:27017/poet',
   ipfsUrl: 'http://localhost:5001',
-  insightUrl: 'https://test-insight.bitpay.com/api',
   bitcoinUrl: '127.0.0.1',
-  bitcoinPort: 18332,
-  bitcoinNetwork: 'testnet',
+  bitcoinPort: 18443,
+  bitcoinNetwork: 'regtest',
   bitcoinUsername: 'bitcoinrpcuser',
   bitcoinPassword: 'bitcoinrpcpassword',
 
@@ -88,8 +86,6 @@ const defaultConfiguration: Configuration = {
   uploadClaimMaxAttempts: 10,
 
   forceBlockHeight: undefined,
-  bitcoinAddress: undefined,
-  bitcoinAddressPrivateKey: undefined,
 }
 
 export const configurationPath = () => path.join(homedir(), '/.po.et/configuration.json')
