@@ -1,8 +1,11 @@
 import { Claim, ClaimType, createClaim } from '@po.et/poet-js'
+import BitcoinCore = require('bitcoin-core')
 const url = require('url')
 import fetch from 'node-fetch'
 import { describe } from 'riteway'
 const ipfsAPI = require('ipfs-api')
+
+const waitForNode = (ms = 3000) => new Promise((res, rej) => setTimeout(() => res(), ms))
 
 const ipfsUrl = () => {
   const { hostname, port } = url.parse(process.env.IPFS_URL)
@@ -38,7 +41,7 @@ const getWork = (host: string) => (id: string) => fetch(fullUrl(host)('/works/' 
 const getWorkFromNodeA = getWork(process.env.INTEGRATION_TEST_NODE_URL)
 const getWorkFromNodeB = getWork(process.env.INTEGRATION_TEST_NODE_URL)
 
-describe('batch claim propagation', async (should: any) => {
+describe('submitting a valid claim containing content', async (should: any) => {
   const { assert } = should('')
 
   const content = 'most readable...'
@@ -59,23 +62,21 @@ describe('batch claim propagation', async (should: any) => {
   })
 
   // Necessary at this time. Server side events could help.
-  await new Promise((res, rej) => setTimeout(() => res(), 3000))
+  await waitForNode(3000)
 
-  {
-    const response = await getWorkFromNodeA(claim.id)
-    const data = await response.json()
+  const response = await getWorkFromNodeA(claim.id)
+  const data = await response.json()
 
-    const {
-      timestamp: { ipfsFileHash },
-    } = data
+  const {
+    timestamp: { ipfsFileHash },
+  } = data
 
-    assert({
-      given: 'an claim retrieved by id from nodeA',
-      should: 'have an IPFS hash',
-      actual: !!ipfsFileHash,
-      expected: true,
-    })
-  }
+  assert({
+    given: 'an claim retrieved by id from nodeA',
+    should: 'have an IPFS hash',
+    actual: !!ipfsFileHash,
+    expected: true,
+  })
 
   // mine blocks = confirmation blocks in environment "A".
 
@@ -87,6 +88,7 @@ describe('batch claim propagation', async (should: any) => {
   })
 
   // mine 1 block in environment "B" to sync blockchain between bitcoinds?
+  // BitcoinCore.generate(1)
 
   // Verify claim is known by node B
   {
