@@ -96,7 +96,7 @@
     "semantic-release": "15.9.12",
     "sinon": "6.1.5",
     "ts-node": "7.0.1",
-    "tsconfig-paths": "3.5.0",
+    "tsconfig-paths": "3.6.0",
     "typescript": "3.0.3",
     "travis-deploy-once": "5.0.4"
   }
